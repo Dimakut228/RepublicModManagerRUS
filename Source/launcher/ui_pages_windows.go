@@ -80,14 +80,14 @@ func drawPlaylistModal(c *canvas) {
 	w, h := c.s(520), c.s(244)
 	x, y := (c.width-w)/2, (c.height-h)/2
 	c.roundedRect(x, y, w, h, c.s(16), palette.Surface, palette.BorderBright)
-	c.label("PLUGIN PLAYLIST", x+c.s(24), y+c.s(20), w-c.s(48), palette.AccentBright)
-	title := "Save current configuration"
-	detail := "Stores enabled mods and their current load order. Saving an existing name updates it."
-	button := "Save playlist"
+	c.label(tr("t.plugin_playlist"), x+c.s(24), y+c.s(20), w-c.s(48), palette.AccentBright)
+	title := tr("t.save_current_configuration")
+	detail := tr("t.stores_enabled_mods_and")
+	button := tr("t.save_playlist")
 	if c.app.playlistModalMode == "rename" {
-		title = "Rename playlist"
-		detail = "Choose a new name for this saved playlist."
-		button = "Rename"
+		title = tr("t.rename_playlist")
+		detail = tr("t.choose_a_new_name")
+		button = tr("t.rename")
 	}
 	c.text(title, x+c.s(24), y+c.s(43), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine)
 	c.text(detail, x+c.s(24), y+c.s(81), w-c.s(48), c.s(42), fonts.Small, palette.TextMuted, dtLeft|dtWordBreak)
@@ -95,10 +95,10 @@ func drawPlaylistModal(c *canvas) {
 	c.roundedRect(x+c.s(24), fieldY, w-c.s(48), c.s(42), c.s(9), palette.SurfaceRaised, palette.BorderBright)
 	draft := c.app.playlistDraft
 	if draft == "" {
-		draft = "Type a playlist name…"
+		draft = tr("t.type_a_playlist_name")
 	}
 	c.text(draft+map[bool]string{true: "  │", false: ""}[c.app.playlistDraft != ""], x+c.s(36), fieldY, w-c.s(72), c.s(42), fonts.Body, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.compactButton("playlist-modal-cancel", "Cancel", x+w-c.s(212), y+h-c.s(54), c.s(88), c.s(34))
+	c.compactButton("playlist-modal-cancel", tr("t.cancel"), x+w-c.s(212), y+h-c.s(54), c.s(88), c.s(34))
 	c.button("playlist-modal-save", button, x+w-c.s(116), y+h-c.s(54), c.s(92), c.s(34), true)
 }
 
@@ -107,14 +107,14 @@ func drawPlaylistImportModal(c *canvas) {
 	w, h := c.s(540), c.s(250)
 	x, y := (c.width-w)/2, (c.height-h)/2
 	c.roundedRect(x, y, w, h, c.s(16), palette.Surface, palette.BorderBright)
-	c.label("IMPORT PLAYLIST", x+c.s(24), y+c.s(20), w-c.s(48), palette.AccentBright)
-	c.text("Import a Republic Mod Loader playlist", x+c.s(24), y+c.s(46), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine)
+	c.label(tr("t.import_playlist"), x+c.s(24), y+c.s(20), w-c.s(48), palette.AccentBright)
+	c.text(tr("t.import_a_republic_mod"), x+c.s(24), y+c.s(46), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine)
 	dropY := y + c.s(92)
 	c.roundedRect(x+c.s(24), dropY, w-c.s(48), c.s(82), c.s(10), palette.SurfaceRaised, palette.BorderBright)
-	c.text("Drag and drop a playlist JSON here", x+c.s(36), dropY+c.s(10), w-c.s(72), c.s(28), fonts.BodyStrong, palette.Text, dtCenter|dtVCenter|dtSingleLine)
-	c.text("or choose a file from disk", x+c.s(36), dropY+c.s(40), w-c.s(72), c.s(24), fonts.Small, palette.TextMuted, dtCenter|dtVCenter|dtSingleLine)
-	c.compactButton("playlist-import-cancel", "Cancel", x+w-c.s(206), y+h-c.s(52), c.s(82), c.s(34))
-	c.button("playlist-import-browse", "Browse…", x+w-c.s(116), y+h-c.s(52), c.s(92), c.s(34), true)
+	c.text(tr("t.drag_and_drop_a"), x+c.s(36), dropY+c.s(10), w-c.s(72), c.s(28), fonts.BodyStrong, palette.Text, dtCenter|dtVCenter|dtSingleLine)
+	c.text(tr("t.or_choose_a_file"), x+c.s(36), dropY+c.s(40), w-c.s(72), c.s(24), fonts.Small, palette.TextMuted, dtCenter|dtVCenter|dtSingleLine)
+	c.compactButton("playlist-import-cancel", tr("t.cancel"), x+w-c.s(206), y+h-c.s(52), c.s(82), c.s(34))
+	c.button("playlist-import-browse", tr("t.browse"), x+w-c.s(116), y+h-c.s(52), c.s(92), c.s(34), true)
 }
 
 func drawPlaylistDeleteModal(c *canvas) {
@@ -122,11 +122,11 @@ func drawPlaylistDeleteModal(c *canvas) {
 	w, h := c.s(470), c.s(210)
 	x, y := (c.width-w)/2, (c.height-h)/2
 	c.roundedRect(x, y, w, h, c.s(16), palette.Surface, palette.BorderBright)
-	c.label("DELETE PLAYLIST", x+c.s(24), y+c.s(20), w-c.s(48), palette.Bad)
+	c.label(tr("t.delete_playlist"), x+c.s(24), y+c.s(20), w-c.s(48), palette.Bad)
 	name := c.app.playlistDeleteName
-	c.text("Delete \""+name+"\"?", x+c.s(24), y+c.s(49), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text("This removes only the saved launcher playlist. It does not delete or modify any mod DLL.", x+c.s(24), y+c.s(88), w-c.s(48), c.s(43), fonts.Small, palette.TextMuted, dtLeft|dtWordBreak)
-	c.compactButton("playlist-delete-cancel", "Cancel", x+w-c.s(210), y+h-c.s(52), c.s(84), c.s(34))
+	c.text(tr("t.delete_prefix")+name+"\"?", x+c.s(24), y+c.s(49), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("t.this_removes_only_the"), x+c.s(24), y+c.s(88), w-c.s(48), c.s(43), fonts.Small, palette.TextMuted, dtLeft|dtWordBreak)
+	c.compactButton("playlist-delete-cancel", tr("t.cancel"), x+w-c.s(210), y+h-c.s(52), c.s(84), c.s(34))
 	// Draw a red confirmation button rather than reusing the primary accent.
 	bx, by, bw, bh := x+w-c.s(116), y+h-c.s(52), c.s(92), c.s(34)
 	fill := palette.BadSoft
@@ -134,9 +134,9 @@ func drawPlaylistDeleteModal(c *canvas) {
 		fill = palette.Bad
 	}
 	c.roundedRect(bx, by, bw, bh, c.s(8), fill, palette.Bad)
-	c.text("Delete", bx+c.s(8), by, bw-c.s(16), bh, fonts.SmallStrong, palette.Bad, dtCenter|dtVCenter|dtSingleLine)
+	c.text(tr("t.delete"), bx+c.s(8), by, bw-c.s(16), bh, fonts.SmallStrong, palette.Bad, dtCenter|dtVCenter|dtSingleLine)
 	if c.app.hover == "playlist-delete-confirm" {
-		c.text("Delete", bx+c.s(8), by, bw-c.s(16), bh, fonts.SmallStrong, palette.White, dtCenter|dtVCenter|dtSingleLine)
+		c.text(tr("t.delete"), bx+c.s(8), by, bw-c.s(16), bh, fonts.SmallStrong, palette.White, dtCenter|dtVCenter|dtSingleLine)
 	}
 	c.addHit("playlist-delete-confirm", bx, by, bw, bh)
 }
@@ -146,15 +146,15 @@ func drawWorkshopUnsubscribeModal(c *canvas) {
 	w, h := c.s(510), c.s(220)
 	x, y := (c.width-w)/2, (c.height-h)/2
 	c.roundedRect(x, y, w, h, c.s(16), palette.Surface, palette.BorderBright)
-	c.label("STEAM WORKSHOP", x+c.s(24), y+c.s(20), w-c.s(48), palette.Bad)
-	c.text("Unsubscribe from this mod?", x+c.s(24), y+c.s(47), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine)
+	c.label(tr("t.steam_workshop"), x+c.s(24), y+c.s(20), w-c.s(48), palette.Bad)
+	c.text(tr("t.unsubscribe_from_this_mod"), x+c.s(24), y+c.s(47), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine)
 	name := c.app.workshopUnsubscribeName
 	id := c.app.workshopUnsubscribeID
 	c.text(name, x+c.s(24), y+c.s(83), w-c.s(48), c.s(25), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text("Workshop ID  "+id, x+c.s(24), y+c.s(108), w-c.s(48), c.s(22), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
-	c.text("Steam will unsubscribe the item and RML will immediately delete its local Workshop folder.", x+c.s(24), y+c.s(133), w-c.s(48), c.s(32), fonts.Small, palette.TextMuted, dtLeft|dtWordBreak)
-	c.compactButton("workshop-unsubscribe-cancel", "Cancel", x+w-c.s(214), y+h-c.s(52), c.s(86), c.s(34))
-	c.dangerButton("workshop-unsubscribe-confirm", "Unsubscribe", x+w-c.s(120), y+h-c.s(52), c.s(96), c.s(34), true)
+	c.text(tr("t.workshop_id")+id, x+c.s(24), y+c.s(108), w-c.s(48), c.s(22), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+	c.text(tr("t.steam_will_unsubscribe_the"), x+c.s(24), y+c.s(133), w-c.s(48), c.s(32), fonts.Small, palette.TextMuted, dtLeft|dtWordBreak)
+	c.compactButton("workshop-unsubscribe-cancel", tr("t.cancel"), x+w-c.s(214), y+h-c.s(52), c.s(86), c.s(34))
+	c.dangerButton("workshop-unsubscribe-confirm", tr("t.unsubscribe"), x+w-c.s(120), y+h-c.s(52), c.s(96), c.s(34), true)
 }
 
 func drawBuildSHATooltip(c *canvas) {
@@ -363,14 +363,14 @@ func drawWorkshopForceUpdateModal(c *canvas) {
 	w, h := c.s(560), c.s(268)
 	x, y := (c.width-w)/2, (c.height-h)/2
 	c.roundedRect(x, y, w, h, c.s(16), palette.Surface, palette.BorderBright)
-	c.label("WORKSHOP MAINTENANCE", x+c.s(24), y+c.s(20), w-c.s(48), palette.Warn)
-	c.text("Force-update this mod?", x+c.s(24), y+c.s(47), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine)
+	c.label(tr("t.workshop_maintenance"), x+c.s(24), y+c.s(20), w-c.s(48), palette.Warn)
+	c.text(tr("t.force_update_this_mod"), x+c.s(24), y+c.s(47), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine)
 	name := c.app.workshopForceUpdateName
 	id := c.app.workshopForceUpdateID
 	c.text(name, x+c.s(24), y+c.s(83), w-c.s(48), c.s(25), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text("Workshop ID  "+id, x+c.s(24), y+c.s(108), w-c.s(48), c.s(22), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
-	c.text("RML will unsubscribe the item, delete its local Workshop folder, resubscribe it, then ask Steam to begin a high-priority download. Playlist enable state is preserved.", x+c.s(24), y+c.s(136), w-c.s(48), c.s(64), fonts.Small, palette.TextMuted, dtLeft|dtWordBreak)
-	c.compactButton("workshop-force-update-cancel", "Cancel", x+w-c.s(220), y+h-c.s(52), c.s(90), c.s(34))
+	c.text(tr("t.workshop_id")+id, x+c.s(24), y+c.s(108), w-c.s(48), c.s(22), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+	c.text(tr("t.rml_will_unsubscribe_the"), x+c.s(24), y+c.s(136), w-c.s(48), c.s(64), fonts.Small, palette.TextMuted, dtLeft|dtWordBreak)
+	c.compactButton("workshop-force-update-cancel", tr("t.cancel"), x+w-c.s(220), y+h-c.s(52), c.s(90), c.s(34))
 	bx, by, bw, bh := x+w-c.s(122), y+h-c.s(52), c.s(98), c.s(34)
 	fill := palette.WarnSoft
 	if c.app.hover == "workshop-force-update-confirm" {
@@ -381,7 +381,7 @@ func drawWorkshopForceUpdateModal(c *canvas) {
 	if c.app.hover == "workshop-force-update-confirm" {
 		fg = palette.White
 	}
-	c.text("Force Update", bx+c.s(6), by, bw-c.s(12), bh, fonts.SmallStrong, fg, dtCenter|dtVCenter|dtSingleLine)
+	c.text(tr("t.force_update"), bx+c.s(6), by, bw-c.s(12), bh, fonts.SmallStrong, fg, dtCenter|dtVCenter|dtSingleLine)
 	c.addHit("workshop-force-update-confirm", bx, by, bw, bh)
 }
 
@@ -1425,7 +1425,7 @@ func drawWorkshopTable(c *canvas, x, y, w, h int) {
 		} else if item.Unsupported {
 			sub = tr("t.needs_attention")
 			if len(item.UnsupportedReasons) > 0 {
-				sub += " — " + item.UnsupportedReasons[0]
+				sub += " — " + localizeReason(item.UnsupportedReasons[0])
 			}
 			subColor = palette.Bad
 		} else if item.RemoteSupportState == "ok" {
@@ -1464,7 +1464,7 @@ func drawWorkshopDetail(c *canvas, x, y, w, h int) {
 	if item.Unsupported {
 		reason := tr("t.needs_attention")
 		if len(item.UnsupportedReasons) > 0 {
-			reason += ": " + strings.Join(item.UnsupportedReasons, "; ")
+			reason += ": " + strings.Join(localizeWarnings(item.UnsupportedReasons), "; ")
 		}
 		c.text(reason, x+c.s(20), y+c.s(96), w-c.s(40), c.s(29), fonts.Tiny, palette.Bad, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		thumbY = y + c.s(126)

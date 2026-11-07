@@ -15,11 +15,11 @@ import (
 const defaultPlaylistName = "Default"
 
 type playlistExchange struct {
-	SchemaVersion int              `json:"schemaVersion"`
+	SchemaVersion int              `json:tr("t.schemaversion")`
 	Format        string           `json:"format"`
 	Name          string           `json:"name"`
-	WorkshopItems []string         `json:"workshopItems"`
-	Plugins       []PlaylistPlugin `json:"plugins,omitempty"`
+	WorkshopItems []string         `json:tr("t.workshopitems")`
+	Plugins       []PlaylistPlugin `json:tr("t.plugins_omitempty")`
 }
 
 const playlistExchangeFormat = "Republic Mod Loader Playlist"
@@ -66,7 +66,7 @@ func safePlaylistFilename(name string) string {
 
 func (a *application) exportSelectedPlaylist() {
 	if strings.EqualFold(a.cfg.SelectedPlaylist, defaultPlaylistName) || a.selectedPlaylistIndex() < 0 {
-		a.status = "Default cannot be exported"
+		a.status = tr("t.default_cannot_be_exported")
 		return
 	}
 	p := a.selectedPlaylistSnapshot()
@@ -74,12 +74,12 @@ func (a *application) exportSelectedPlaylist() {
 	sort.Strings(data.WorkshopItems)
 	exports := filepath.Join(a.baseDir, "Exports")
 	if err := os.MkdirAll(exports, 0o755); err != nil {
-		a.status = "Could not create Exports folder: " + err.Error()
+		a.status = tr("t.could_not_create_exports") + err.Error()
 		return
 	}
 	path := savePlaylistDialog(a.hwnd, exports, safePlaylistFilename(p.Name)+".json")
 	if path == "" {
-		a.status = "Playlist export cancelled"
+		a.status = tr("t.playlist_export_cancelled")
 		return
 	}
 	if !strings.EqualFold(filepath.Ext(path), ".json") {
@@ -91,16 +91,16 @@ func (a *application) exportSelectedPlaylist() {
 		err = os.WriteFile(path, encoded, 0o644)
 	}
 	if err != nil {
-		a.status = "Could not export playlist: " + err.Error()
+		a.status = tr("t.could_not_export_playlist") + err.Error()
 		return
 	}
-	a.status = "Playlist exported: " + path
+	a.status = tr("t.playlist_exported") + path
 }
 
 func (a *application) uniqueImportedPlaylistName(name string) string {
 	name = strings.TrimSpace(name)
 	if !validPlaylistName(name) {
-		name = "Imported Playlist"
+		name = tr("t.imported_playlist")
 	}
 	used := func(candidate string) bool {
 		if strings.EqualFold(candidate, defaultPlaylistName) {
@@ -118,7 +118,7 @@ func (a *application) uniqueImportedPlaylistName(name string) string {
 	}
 	base := name
 	for i := 2; i < 1000; i++ {
-		candidate := fmt.Sprintf("%s (%d)", base, i)
+		candidate := fmt.Sprintf(tr("t.s_d"), base, i)
 		if len(candidate) <= 96 && !used(candidate) {
 			return candidate
 		}
@@ -129,24 +129,24 @@ func (a *application) uniqueImportedPlaylistName(name string) string {
 func (a *application) importPlaylistFile(path string) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		a.status = "Could not read playlist: " + err.Error()
+		a.status = tr("t.could_not_read_playlist") + err.Error()
 		return
 	}
 	if len(data) > 2*1024*1024 {
-		a.status = "Playlist file is too large"
+		a.status = tr("t.playlist_file_is_too")
 		return
 	}
 	var exchange playlistExchange
 	if err := json.Unmarshal(data, &exchange); err != nil {
-		a.status = "Invalid playlist JSON: " + err.Error()
+		a.status = tr("t.invalid_playlist_json") + err.Error()
 		return
 	}
 	if exchange.SchemaVersion != 1 || exchange.Format != playlistExchangeFormat {
-		a.status = "This is not a supported Republic Mod Loader playlist"
+		a.status = tr("t.this_is_not_a")
 		return
 	}
 	if len(a.cfg.Playlists) >= 64 {
-		a.status = "Playlist limit reached (64)"
+		a.status = tr("t.playlist_limit_reached_64")
 		return
 	}
 	seen := map[string]bool{}
@@ -159,13 +159,13 @@ func (a *application) importPlaylistFile(path string) {
 		}
 	}
 	if len(workshop) > maxWorkshopItems {
-		a.status = "Playlist contains too many Workshop items"
+		a.status = tr("t.playlist_contains_too_many")
 		return
 	}
 	sort.Strings(workshop)
 	name := a.uniqueImportedPlaylistName(exchange.Name)
 	if name == "" {
-		a.status = "Could not create a unique playlist name"
+		a.status = tr("t.could_not_create_a")
 		return
 	}
 	plugins := make([]PlaylistPlugin, 0, minIntModel(len(exchange.Plugins), 128))
@@ -191,15 +191,15 @@ func (a *application) importPlaylistFile(path string) {
 	outcome := subscribeWorkshopItems(a.cfg.GamePath, workshop)
 	a.refresh(true)
 	if outcome.Failed > 0 {
-		a.status = fmt.Sprintf("Imported %q; Steam subscription requested for %d item(s), %d failed", name, outcome.Requested, outcome.Failed)
+		a.status = fmt.Sprintf(tr("t.imported_q_steam_subscription_failed"), name, outcome.Requested, outcome.Failed)
 	} else {
-		a.status = fmt.Sprintf("Imported %q; Steam subscription requested for %d Workshop item(s)", name, outcome.Requested)
+		a.status = fmt.Sprintf(tr("t.imported_q_steam_subscription"), name, outcome.Requested)
 	}
 }
 
 func (a *application) openPlaylistRename() {
 	if strings.EqualFold(a.cfg.SelectedPlaylist, defaultPlaylistName) || a.selectedPlaylistIndex() < 0 {
-		a.status = "Default cannot be renamed"
+		a.status = tr("t.default_cannot_be_renamed")
 		return
 	}
 	a.playlistModalMode = "rename"
@@ -212,18 +212,18 @@ func (a *application) renamePlaylistDraft() {
 	old := a.cfg.SelectedPlaylist
 	name := strings.TrimSpace(a.playlistDraft)
 	if !validPlaylistName(name) {
-		a.status = "Playlist name must be 1–96 printable characters and cannot be Default"
+		a.status = tr("t.playlist_name_must_be")
 		return
 	}
 	for _, p := range a.cfg.Playlists {
 		if !strings.EqualFold(p.Name, old) && strings.EqualFold(p.Name, name) {
-			a.status = "A playlist with that name already exists"
+			a.status = tr("t.a_playlist_with_that")
 			return
 		}
 	}
 	i := a.selectedPlaylistIndex()
 	if i < 0 {
-		a.status = "Default cannot be renamed"
+		a.status = tr("t.default_cannot_be_renamed")
 		return
 	}
 	a.cfg.Playlists[i].Name = name
@@ -235,7 +235,7 @@ func (a *application) renamePlaylistDraft() {
 		return strings.ToLower(a.cfg.Playlists[i].Name) < strings.ToLower(a.cfg.Playlists[j].Name)
 	})
 	_ = saveConfig(a.configPath, a.cfg)
-	a.status = fmt.Sprintf("Playlist renamed: %q → %q", old, name)
+	a.status = fmt.Sprintf(tr("t.playlist_renamed_q_q"), old, name)
 }
 
 func (a *application) selectedPlaylistIndex() int {
@@ -414,7 +414,7 @@ func (a *application) selectPlaylist(name string) {
 			}
 		}
 		if !found {
-			a.status = "Playlist no longer exists: " + name
+			a.status = tr("t.playlist_no_longer_exists") + name
 			return
 		}
 		a.cfg.SelectedPlaylist = name
@@ -423,7 +423,7 @@ func (a *application) selectPlaylist(name string) {
 	_ = saveConfig(a.configPath, a.cfg)
 	a.refresh(true)
 	if a.cfg.SelectedPlaylist == defaultPlaylistName {
-		a.status = "Default mod configuration active"
+		a.status = tr("t.default_mod_configuration_active")
 	} else {
 		missing := 0
 		if p := a.currentPlaylist(); p != nil {
@@ -438,9 +438,9 @@ func (a *application) selectPlaylist(name string) {
 			}
 		}
 		if missing > 0 {
-			a.status = fmt.Sprintf("Playlist %q active; %d saved plugin(s) are not currently installed", a.cfg.SelectedPlaylist, missing)
+			a.status = fmt.Sprintf(tr("t.playlist_q_active_d"), a.cfg.SelectedPlaylist, missing)
 		} else {
-			a.status = "Playlist active: " + a.cfg.SelectedPlaylist
+			a.status = tr("t.playlist_active") + a.cfg.SelectedPlaylist
 		}
 	}
 }
@@ -461,12 +461,12 @@ func (a *application) openPlaylistSave() {
 		draft = p.Name
 	}
 	if draft == "" {
-		draft = fmt.Sprintf("Playlist %d", len(a.cfg.Playlists)+1)
+		draft = fmt.Sprintf(tr("t.playlist_d"), len(a.cfg.Playlists)+1)
 	}
 	a.playlistDraft = draft
 	a.playlistModal = true
 	a.playlistDropdown = false
-	a.status = "Enter a playlist name and press Enter or Save"
+	a.status = tr("t.enter_a_playlist_name")
 }
 
 func validPlaylistName(name string) bool {
@@ -513,7 +513,7 @@ func (a *application) savePlaylistDraft() {
 	}
 	name := strings.TrimSpace(a.playlistDraft)
 	if !validPlaylistName(name) {
-		a.status = "Playlist name must be 1–96 printable characters and cannot be Default"
+		a.status = tr("t.playlist_name_must_be")
 		return
 	}
 	entries := a.playlistEntriesFromCurrentConfiguration()
@@ -541,7 +541,7 @@ func (a *application) savePlaylistDraft() {
 		a.cfg.Playlists[found] = replacement
 	} else {
 		if len(a.cfg.Playlists) >= 64 {
-			a.status = "Playlist limit reached (64)"
+			a.status = tr("t.playlist_limit_reached_64")
 			return
 		}
 		a.cfg.Playlists = append(a.cfg.Playlists, replacement)
@@ -554,12 +554,12 @@ func (a *application) savePlaylistDraft() {
 	a.playlistModalMode = ""
 	a.playlistDraft = ""
 	_ = saveConfig(a.configPath, a.cfg)
-	a.status = fmt.Sprintf("Playlist %q saved: %d plugin(s), %d Workshop item(s), %d development mod(s)", name, len(entries), len(workshop), len(development))
+	a.status = fmt.Sprintf(tr("t.playlist_q_saved_d"), name, len(entries), len(workshop), len(development))
 }
 
 func (a *application) requestDeleteSelectedPlaylist() {
 	if strings.EqualFold(a.cfg.SelectedPlaylist, defaultPlaylistName) || a.selectedPlaylistIndex() < 0 {
-		a.status = "Default is the baseline configuration and cannot be deleted"
+		a.status = tr("t.default_is_the_baseline")
 		return
 	}
 	a.playlistDeleteName = a.cfg.SelectedPlaylist
@@ -589,7 +589,7 @@ func (a *application) confirmDeleteSelectedPlaylist() {
 	a.restoreSelectedPlaylistConfig()
 	_ = saveConfig(a.configPath, a.cfg)
 	a.refresh(true)
-	a.status = "Deleted playlist: " + name + " — Default configuration restored"
+	a.status = tr("t.deleted_playlist") + name + tr("t.default_configuration_restored")
 }
 
 func (a *application) playlistKey(r rune) {
@@ -600,7 +600,7 @@ func (a *application) playlistKey(r rune) {
 	case 27: // Escape
 		a.playlistModal = false
 		a.playlistDraft = ""
-		a.status = "Playlist save cancelled"
+		a.status = tr("t.playlist_save_cancelled")
 	case 13: // Enter
 		a.savePlaylistDraft()
 	case 8: // Backspace

@@ -113,6 +113,7 @@ EXCLUDED = {
     "launcher executable=%s runtime root=%s resolution=%s",
     "Exports",
     "manual support archive",
+    "Republic Mod Loader Playlist",
 }
 
 FUNCTION_SCOPES = {
@@ -304,6 +305,19 @@ TASKS = {
                 "pluginValidationDetails", "drawPluginValidationBanners",
                 "drawPluginDetail", "drawDevelopmentTable", "drawDevelopmentDetail",
                 "drawWorkshopTable", "drawWorkshopDetail", "drawDiagnosticsPage",
+            ],
+        },
+    },
+    "playlist_ui": {
+        "files": [
+            "Source/launcher/playlists_windows.go",
+            "Source/launcher/ui_pages_windows.go",
+        ],
+        "scopes": {
+            "Source/launcher/ui_pages_windows.go": [
+                "drawPlaylistModal", "drawPlaylistImportModal", "drawPlaylistDeleteModal",
+                "drawWorkshopUnsubscribeModal", "drawWorkshopForceUpdateModal",
+                "drawPlaylistDropdownOverlay",
             ],
         },
     },
