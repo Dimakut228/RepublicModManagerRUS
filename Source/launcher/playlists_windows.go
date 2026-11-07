@@ -15,11 +15,11 @@ import (
 const defaultPlaylistName = "Default"
 
 type playlistExchange struct {
-	SchemaVersion int              `json:tr("t.schemaversion")`
+	SchemaVersion int              `json:"schemaVersion"`
 	Format        string           `json:"format"`
 	Name          string           `json:"name"`
-	WorkshopItems []string         `json:tr("t.workshopitems")`
-	Plugins       []PlaylistPlugin `json:tr("t.plugins_omitempty")`
+	WorkshopItems []string         `json:"workshopItems"`
+	Plugins       []PlaylistPlugin `json:"plugins,omitempty"`
 }
 
 const playlistExchangeFormat = "Republic Mod Loader Playlist"
