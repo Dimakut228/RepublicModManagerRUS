@@ -15,7 +15,17 @@ var reasonKeyByText = map[string]string{
 	"Workshop page is unavailable":                      "warn.page_unavailable",
 	"Workshop item appears delisted or inaccessible":    "warn.delisted",
 	"Workshop item has been removed from the community": "warn.removed",
-	"Workshop: Steam library could not be derived from the selected WRSR path": "warn.no_steam_library",
+	"Workshop: Steam library could not be derived from the selected WRSR path":                       "warn.no_steam_library",
+	"Could not verify Workshop revision":                                                             "update.reason.unverified",
+	"Workshop item is no longer retrievable from Steam":                                              "update.reason.missing",
+	"Steam is currently downloading this Workshop item":                                              "update.reason.downloading",
+	"Steam reports that this Workshop item needs an update":                                          "update.reason.needs_update",
+	"Workshop item is subscribed/tracked but no installed revision was found":                        "update.reason.no_installed",
+	"Steam's latest manifest differs from the installed manifest":                                    "update.reason.manifest",
+	"Workshop server revision is newer than the installed copy, but Steam is not flagging an update": "update.reason.server_newer_no_flag",
+	"Workshop server revision is newer than the installed copy":                                      "update.reason.server_newer",
+	"Installed Workshop revision matches the latest published update timestamp":                      "update.reason.current",
+	"Installed locally, but the latest published timestamp could not be verified":                    "update.reason.current_unverified",
 }
 
 func localizeReason(text string) string {

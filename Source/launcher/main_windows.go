@@ -216,6 +216,27 @@ func windowProc(hwnd uintptr, message uint32, wparam, lparam uintptr) uintptr {
 			invalidateWindow(hwnd)
 			return 0
 		}
+		if app != nil && app.page == 3 && !app.settingsModal {
+			delta := highWord(wparam)
+			step := 3
+			if delta < 0 {
+				step = -3
+			}
+			px, py := wheelClientPoint(hwnd, lparam)
+			insideList := px >= app.catalogListX && px < app.catalogListX+app.catalogListW && py >= app.catalogListY && py < app.catalogListY+app.catalogListH
+			if insideList {
+				rowH := int(64 * app.scale)
+				if rowH < 1 {
+					rowH = 1
+				}
+				visible := maxInt(1, (app.catalogListH-12)/rowH)
+				app.catalogHelpScroll = clampListScroll(app.catalogHelpScroll-step, len(app.catalogIDs), visible)
+			} else {
+				app.catalogDetailScroll = maxInt(0, app.catalogDetailScroll-step*40)
+			}
+			invalidateWindow(hwnd)
+			return 0
+		}
 		if app != nil && app.page == 1 && !app.workshopUnsubscribeModal && !app.workshopForceUpdateModal && app.mouseX >= app.modListX && app.mouseX < app.modListX+app.modListW && app.mouseY >= app.modListY && app.mouseY < app.modListY+app.modListH {
 			app.scrollActiveMod(highWord(wparam), false)
 			invalidateWindow(hwnd)

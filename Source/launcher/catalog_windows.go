@@ -365,7 +365,82 @@ func parseCatalogPageIDs(html string) ([]string, int, error) {
 	return parseBrowseResults(html)
 }
 
-// fetchCategories returns the Steam-advertised tag list with a 24h TTL. Falls
+// fetchItemDescription reads the full description from the item's community
+// page. The details API sometimes returns an empty short_description for
+// Workshop items whose author left it blank in the metadata feed.
+func (c *catalogClient) fetchItemDescription(id string) (string, error) {
+	if !validWorkshopID(id) {
+		return "", fmt.Errorf("invalid Workshop item id")
+	}
+	req, err := http.NewRequest(http.MethodGet, workshopURL(id)+"&l=english", nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", fmt.Sprintf("RepublicModManagerRUS/%s", launcherVersion))
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	resp, err := c.doRequestWithRetries(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("item page returned status %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	if err != nil {
+		return "", err
+	}
+	text := string(body)
+	if idx := strings.Index(text, `class="workshopItemDescription"`); idx >= 0 {
+		if open := strings.Index(text[idx:], ">"); open >= 0 {
+			rest := text[idx+open+1:]
+			if close := strings.Index(rest, "</div>"); close >= 0 {
+				raw := rest[:close]
+				raw = stripHTMLTags(raw)
+				raw = strings.TrimSpace(plainWorkshopDescription(raw))
+				if len(raw) > 6000 {
+					raw = raw[:6000]
+				}
+				return raw, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("item page did not contain a description block")
+}
+
+var htmlTagRegex = regexp.MustCompile(`<[^>]+>`)
+
+func stripHTMLTags(text string) string {
+	text = htmlTagRegex.ReplaceAllString(text, " ")
+	replacer := strings.NewReplacer(
+		"&amp;", "&", "&quot;", `"`, "&#39;", "'", "&lt;", "<", "&gt;", ">",
+		"&nbsp;", " ", "\r\n", "\n", "\r", "\n",
+	)
+	text = replacer.Replace(text)
+	for strings.Contains(text, "  ") {
+		text = strings.ReplaceAll(text, "  ", " ")
+	}
+	return text
+}
+
+// stripBareURLLines drops lines that consist of a bare URL only (usually a
+// workshop preview image link); inline links inside sentences survive.
+func stripBareURLLines(text string) string {
+	// Preview image URLs are noise in a description preview. Remove Steam's
+	// media hosts outright; ordinary links inside sentences survive.
+	text = regexp.MustCompile(`https?://(?:images\.steamusercontent\.com|steamuserimages-[a-z0-9]+\.akamaihd\.net)/\S+`).ReplaceAllString(text, "")
+	lines := strings.Split(text, "\n")
+	out := make([]string, 0, len(lines))
+	bareURL := regexp.MustCompile(`^\s*https?://\S+\s*$`)
+	for _, line := range lines {
+		if bareURL.MatchString(line) {
+			continue
+		}
+		out = append(out, line)
+	}
+	return strings.Join(out, "\n")
+}
+
 // back to the built-in catalogPrimaryTags list on error.
 func (c *catalogClient) fetchCategories() []string {
 	root := catalogCachePath(c.KnowledgeRoot)
@@ -588,6 +663,7 @@ type detailsRow struct {
 	PublishedFileID  string    `json:"publishedfileid"`
 	Title            string    `json:"title"`
 	ShortDescription string    `json:"short_description"`
+	Description      string    `json:"description"`
 	TimeCreated      flexInt64 `json:"time_created"`
 	TimeUpdated      flexInt64 `json:"time_updated"`
 	Subscriptions    flexInt64 `json:"subscriptions"`
@@ -597,7 +673,7 @@ type detailsRow struct {
 	PreviewURL       string    `json:"preview_url"`
 	Creator          string    `json:"creator"`
 	Visibility       flexInt64 `json:"visibility"`
-	Banned           bool      `json:"banned"`
+	Banned           flexBool  `json:"banned"`
 	Tags             []struct {
 		DisplayName string `json:"display_name"`
 	} `json:"tags"`
@@ -606,6 +682,22 @@ type detailsRow struct {
 // flexInt64 accepts either a JSON number or a string that holds digits. Steam
 // sends some of these fields differently across item shapes.
 type flexInt64 int64
+
+// flexBool accepts Steam's mixed boolean encoding (true/false or 0/1).
+type flexBool bool
+
+func (f *flexBool) UnmarshalJSON(data []byte) error {
+	text := strings.TrimSpace(strings.Trim(string(data), `"`))
+	switch text {
+	case "1", "true", "True", "TRUE":
+		*f = true
+	case "0", "false", "False", "FALSE", "", "null":
+		*f = false
+	default:
+		*f = false
+	}
+	return nil
+}
 
 func (f *flexInt64) UnmarshalJSON(data []byte) error {
 	text := strings.TrimSpace(strings.Trim(string(data), `"`))
@@ -632,10 +724,15 @@ func parseDetailsBody(data []byte) (map[string]catalogItem, error) {
 	}
 	out := map[string]catalogItem{}
 	for _, row := range decoded.Response.PublishedFileDetails {
+		description := strings.TrimSpace(row.Description)
+		if description == "" {
+			description = strings.TrimSpace(row.ShortDescription)
+		}
+		description = strings.TrimSpace(plainWorkshopDescription(stripBareURLLines(stripHTMLTags(description))))
 		item := catalogItem{
 			ID:            row.PublishedFileID,
 			Title:         row.Title,
-			Description:   row.ShortDescription,
+			Description:   description,
 			TimeCreated:   int64(row.TimeCreated),
 			TimeUpdated:   int64(row.TimeUpdated),
 			Subscriptions: int(row.Subscriptions),
@@ -645,7 +742,7 @@ func parseDetailsBody(data []byte) (map[string]catalogItem, error) {
 			PreviewURL:    row.PreviewURL,
 			Creator:       row.Creator,
 			Visibility:    int(row.Visibility),
-			Banned:        row.Banned,
+			Banned:        bool(row.Banned),
 		}
 		for _, tag := range row.Tags {
 			item.Tags = append(item.Tags, tag.DisplayName)

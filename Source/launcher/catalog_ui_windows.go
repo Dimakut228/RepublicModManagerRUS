@@ -137,6 +137,7 @@ func (a *application) startCatalogFetch() {
 		postAppMessage(a.hwnd, wmRMLCatalogDone, 0, 0)
 		if len(details) > 0 {
 			a.prefetchCatalogThumbs(ids)
+			a.prefetchCatalogDescriptions(ids)
 		}
 	}()
 }
@@ -470,25 +471,32 @@ func drawCatalogPage(c *canvas, x, y, w, h int) {
 
 	// sort + period
 	sortX := x + searchW + gap
-	sortW := maxInt(c.s(170), w-c.s(440)-gap*4)
+	periodW := c.s(210)
+	sortW := maxInt(c.s(150), w-searchW-periodW-gap*2-c.s(4))
 	c.compactButton("catalog-sort", fmt.Sprintf("%s: %s", tr("catalog.filters.sort"), catalogSortLabelFor(app.cfg.CatalogSort)), sortX, filtersTop, sortW, c.s(38))
 	c.addHit("catalog-sort", sortX, filtersTop, sortW, c.s(38))
 	periodX := sortX + sortW + gap
 	if app.cfg.CatalogSort == "" || sortParameter(app.cfg.CatalogSort) == catalogSortTrend {
-		c.compactButton("catalog-period", fmt.Sprintf("%s: %s", tr("catalog.filters.period"), catalogPeriodLabel(app.cfg.CatalogPeriod)), periodX, filtersTop, c.s(190), c.s(38))
-		c.addHit("catalog-period", periodX, filtersTop, c.s(190), c.s(38))
+		c.compactButton("catalog-period", fmt.Sprintf("%s: %s", tr("catalog.filters.period"), catalogPeriodLabel(app.cfg.CatalogPeriod)), periodX, filtersTop, periodW, c.s(38))
+		c.addHit("catalog-period", periodX, filtersTop, periodW, c.s(38))
 	} else {
 		// The period parameter only affects "trend" on Steam's side; hide it
 		// for the other real sorts rather than pretending it is in effect.
-		c.text(tr("catalog.filters.period_hidden"), periodX, filtersTop, c.s(190), c.s(38), fonts.Tiny, palette.TextFaint, dtLeft|dtVCenter|dtSingleLine)
+		c.text(tr("catalog.filters.period_hidden"), periodX, filtersTop, periodW, c.s(38), fonts.Tiny, palette.TextFaint, dtLeft|dtVCenter|dtSingleLine)
 	}
 
 	cursor = filtersTop + c.s(52)
-	// Tag chips wrap into up to 3 rows.
+	// Tag chips: a compact first row by default; the full Steam list is one
+	// click away so the description keeps usable vertical space.
+	tags := app.catalogCategories
+	collapsedCount := minInt(8, len(tags))
+	if !app.catalogAllCategories {
+		tags = tags[:collapsedCount]
+	}
 	chipY := cursor
 	chipX := x
 	chipH := c.s(30)
-	for _, tag := range app.catalogCategories {
+	for _, tag := range tags {
 		label := tag
 		for _, sel := range app.catalogTags {
 			if sel == tag {
@@ -496,7 +504,7 @@ func drawCatalogPage(c *canvas, x, y, w, h int) {
 				break
 			}
 		}
-		width := c.textWidth(label, fonts.Small) + c.s(28)
+		width := c.textWidth(label, fonts.Small) + c.s(44)
 		if chipX+width > x+w {
 			chipX = x
 			chipY += chipH + c.s(6)
@@ -509,6 +517,16 @@ func drawCatalogPage(c *canvas, x, y, w, h int) {
 		chipY += chipH + c.s(10)
 	} else {
 		chipY += c.s(4)
+	}
+	// Expand/collapse the full Steam tag list.
+	if len(app.catalogCategories) > collapsedCount {
+		toggleLabel := tr("catalog.filters.all_categories")
+		if app.catalogAllCategories {
+			toggleLabel = tr("catalog.filters.collapse_categories")
+		}
+		toggleW := c.s(190)
+		c.compactButton("catalog-toggle-categories", toggleLabel, x+w-c.s(150)-toggleW, chipY, toggleW, c.s(30))
+		c.addHit("catalog-toggle-categories", x+w-c.s(150)-toggleW, chipY, toggleW, c.s(30))
 	}
 	// Third row of filters.
 	c.compactButton("catalog-show-incompatible", tr("catalog.filters.incompatible"), x, chipY, c.s(250), c.s(32))
@@ -534,13 +552,15 @@ func drawCatalogPage(c *canvas, x, y, w, h int) {
 	listW := int(float64(w-gap) * 0.42)
 	detailX := x + listW + gap
 	detailW := w - listW - gap
-	listTop := cursor + c.s(14)
+	listTop := cursor + c.s(34)
 	listBottom := y + h - c.s(76)
 	app.catalogListX, app.catalogListY, app.catalogListW, app.catalogListH = x, listTop, listW, maxInt(c.s(120), listBottom-listTop)
 	c.card(x, listTop, listW, app.catalogListH)
 	drawCatalogListColumn(c, x, listTop, listW, app.catalogListH)
 
 	c.card(detailX, listTop, detailW, app.catalogListH)
+	app.catalogDetailX, app.catalogDetailY = detailX, listTop
+	app.catalogDetailW, app.catalogDetailH = detailW, app.catalogListH
 	drawCatalogDetailPane(c, detailX, listTop, detailW, maxInt(c.s(120), listBottom-listTop))
 
 	// Pagination at the bottom edge.
@@ -602,16 +622,36 @@ func drawCatalogListColumn(c *canvas, x, y, w, h int) {
 			c.text(tr("catalog.detail.thumbnails_missing"), thumbX, ry+c.s(3), thumbW, rowH-c.s(10), fonts.Tiny, palette.TextFaint, dtCenter|dtVCenter|dtSingleLine)
 		}
 		titleX := thumbX + thumbW + c.s(8)
-		c.text(title, titleX, ry+c.s(4), x+w-titleX-c.s(24), c.s(26), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		titleW := x + w - titleX - c.s(24)
 		second := tr("catalog.detail.id") + app.catalogIDs[i]
 		if ok {
 			second = fmt.Sprintf(tr("catalog.list.meta"), item.Subscriptions, item.Views, formatCatalogSize(item.FileSize))
 		}
+		installed := app.catalogItemInstalled(app.catalogIDs[i])
+		if installed {
+			titleW -= c.s(72)
+		}
+		c.text(title, titleX, ry+c.s(4), titleW, c.s(26), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		c.text(second, titleX, ry+c.s(30), x+w-titleX-c.s(24), c.s(24), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-		if app.catalogItemInstalled(app.catalogIDs[i]) {
+		if installed {
 			c.pill(tr("catalog.state.installed"), 0, x+w-c.s(86), ry+c.s(16), c.s(66), c.s(26))
 		}
 		c.addHit(id, x+c.s(6), ry, w-c.s(12), rowH-c.s(4))
+	}
+	// Scrollbar for the results list.
+	total := len(app.catalogIDs)
+	if total > visible {
+		trackX := x + w - c.s(6)
+		trackY := y + c.s(34)
+		trackH := visible * rowH
+		maxOffset := total - visible
+		thumbH := maxInt(c.s(24), trackH*visible/total)
+		thumbY := trackY
+		if maxOffset > 0 {
+			thumbY += (trackH - thumbH) * offset / maxOffset
+		}
+		c.roundedRect(trackX, trackY, c.s(3), trackH, c.s(2), palette.Background, palette.Background)
+		c.roundedRect(trackX, thumbY, c.s(3), thumbH, c.s(2), palette.BorderBright, palette.BorderBright)
 	}
 }
 
@@ -658,30 +698,41 @@ func drawCatalogDetailPane(c *canvas, x, y, w, h int) {
 	if descriptionH < c.s(60) {
 		descriptionH = c.s(60)
 	}
+	c.label(tr("t.description"), x+c.s(20), descriptionY, w-c.s(40), palette.TextFaint)
 	// translation header row
+	chipY := descriptionY + c.s(20)
+	descriptionH -= c.s(20)
 	chipH := c.s(30)
 	_, _, translateAvailable := c.app.ensureTranslated(item.Description)
 	if translateAvailable {
-		c.compactButton("catalog-show-original", tr("catalog.detail.original"), x+c.s(20), descriptionY, c.s(120), chipH)
-		c.addHit("catalog-show-original", x+c.s(20), descriptionY, c.s(120), chipH)
-		c.compactButton("catalog-show-translated", tr("catalog.detail.translated"), x+c.s(148), descriptionY, c.s(120), chipH)
-		c.addHit("catalog-show-translated", x+c.s(148), descriptionY, c.s(120), chipH)
+		c.compactButton("catalog-show-original", tr("catalog.detail.original"), x+c.s(20), chipY, c.s(120), chipH)
+		c.addHit("catalog-show-original", x+c.s(20), chipY, c.s(120), chipH)
+		c.compactButton("catalog-show-translated", tr("catalog.detail.translated"), x+c.s(148), chipY, c.s(120), chipH)
+		c.addHit("catalog-show-translated", x+c.s(148), chipY, c.s(120), chipH)
 		state, _, _ := c.app.describeTranslate(item.Description)
 		if state == "busy" {
-			c.text(tr("catalog.detail.translate_busy"), x+c.s(284), descriptionY, w-c.s(304), chipH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+			c.text(tr("catalog.detail.translate_busy"), x+c.s(284), chipY, w-c.s(304), chipH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
 		} else if state == "error" {
-			c.text(tr("catalog.detail.translate_failed")+c.app.translateError, x+c.s(284), descriptionY, w-c.s(304), chipH, fonts.Tiny, palette.Bad, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+			c.text(tr("catalog.detail.translate_failed")+c.app.translateError, x+c.s(284), chipY, w-c.s(304), chipH, fonts.Tiny, palette.Bad, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		}
-		c.compactButton("catalog-refresh-translate", tr("catalog.detail.refresh"), x+c.s(284), descriptionY, c.s(130), chipH)
-		c.addHit("catalog-refresh-translate", x+c.s(284), descriptionY, c.s(130), chipH)
+		c.compactButton("catalog-refresh-translate", tr("catalog.detail.refresh"), x+c.s(284), chipY, c.s(130), chipH)
+		c.addHit("catalog-refresh-translate", x+c.s(284), chipY, c.s(130), chipH)
 		text := item.Description
+		if text == "" {
+			c.text(tr("catalog.detail.desc_loading"), x+c.s(20), chipY+chipH+c.s(6), w-c.s(40), c.s(24), fonts.Tiny, palette.TextFaint, dtLeft|dtVCenter|dtSingleLine)
+			return
+		}
 		if !c.app.catalogShowOriginal && c.app.translateState == "done" && c.app.translateResult != "" {
 			text = c.app.translateResult
 		}
-		drawScrollableDescription(c, 3, text, x+c.s(20), descriptionY+chipH+c.s(6), w-c.s(40), maxInt(c.s(60), descriptionH-chipH-c.s(6)), fonts.Small, palette.Text)
+		drawScrollableDescription(c, 3, text, x+c.s(20), chipY+chipH+c.s(6), w-c.s(40), maxInt(c.s(40), descriptionH-chipH-c.s(6)), fonts.Small, palette.Text)
 		return
 	}
-	drawScrollableDescription(c, 3, item.Description, x+c.s(20), descriptionY, w-c.s(40), descriptionH, fonts.Small, palette.Text)
+	if item.Description == "" {
+		c.text(tr("catalog.detail.desc_loading"), x+c.s(20), descriptionY+c.s(20), w-c.s(40), c.s(24), fonts.Tiny, palette.TextFaint, dtLeft|dtVCenter|dtSingleLine)
+		return
+	}
+	drawScrollableDescription(c, 3, item.Description, x+c.s(20), descriptionY+c.s(20), w-c.s(40), descriptionH-c.s(20), fonts.Small, palette.Text)
 }
 
 func (a *application) describeTranslate(desc string) (string, string, bool) {

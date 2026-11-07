@@ -20,7 +20,7 @@ import (
 // under 200 MB with an LRU prune so long sessions do not grow without bound.
 
 const (
-	thumbMaxBytes        = 512 * 1024
+	thumbMaxBytes        = 1024 * 1024
 	thumbDirLimit        = 200 * 1024 * 1024
 	thumbTTL             = 30 * 24 * time.Hour
 	thumbDownloadTimeout = 10 * time.Second
@@ -196,6 +196,52 @@ func (c *catalogClient) fetchThumbnail(itemID, previewURL string) (string, error
 // prefetchCatalogThumbs downloads the missing previews for a batch of items in
 // the background and repaints the window when the batch completes. Each item
 // is attempted at most once per session.
+func (a *application) prefetchCatalogDescriptions(ids []string) {
+	a.workshopMu.Lock()
+	items := a.catalogItems
+	pending := a.catalogDescPending
+	if pending == nil {
+		pending = map[string]bool{}
+		a.catalogDescPending = pending
+	}
+	a.workshopMu.Unlock()
+	client := &catalogClient{
+		HTTPClient:    httpDefaultClient,
+		KnowledgeRoot: a.knowledgeRoot,
+	}
+	go func() {
+		for _, id := range ids {
+			item, ok := items[id]
+			if !ok || item.Description != "" {
+				continue
+			}
+			thumbnailFetcherMu.Lock()
+			if pending[id] {
+				thumbnailFetcherMu.Unlock()
+				continue
+			}
+			pending[id] = true
+			thumbnailFetcherMu.Unlock()
+			text, err := client.fetchItemDescription(id)
+			thumbnailFetcherMu.Lock()
+			delete(pending, id)
+			thumbnailFetcherMu.Unlock()
+			if err != nil || text == "" {
+				continue
+			}
+			a.workshopMu.Lock()
+			updated := a.catalogItems[id]
+			updated.Description = text
+			a.catalogItems[id] = updated
+			a.workshopMu.Unlock()
+			saveDetailsCache(detailsCachePath(client, id), updated)
+			invalidateWindow(a.hwnd)
+			postAppMessage(a.hwnd, wmRMLThumbnailDone, 0, 0)
+			time.Sleep(150 * time.Millisecond)
+		}
+	}()
+}
+
 func (a *application) prefetchCatalogThumbs(ids []string) {
 	a.workshopMu.Lock()
 	items := a.catalogItems
@@ -229,6 +275,12 @@ func (a *application) prefetchCatalogThumbs(ids []string) {
 				continue
 			}
 			_, err := client.fetchThumbnail(id, item.PreviewURL)
+			if err != nil {
+				// One polite retry: image hosts occasionally answer 429 under
+				// load, and the item would otherwise stay empty for the session.
+				time.Sleep(150 * time.Millisecond)
+				_, err = client.fetchThumbnail(id, item.PreviewURL)
+			}
 			thumbnailFetcherMu.Lock()
 			delete(pending, id)
 			thumbnailFetcherMu.Unlock()
@@ -237,6 +289,7 @@ func (a *application) prefetchCatalogThumbs(ids []string) {
 			}
 			invalidateWindow(a.hwnd)
 			postAppMessage(a.hwnd, wmRMLThumbnailDone, 0, 0)
+			time.Sleep(120 * time.Millisecond)
 		}
 	}()
 }

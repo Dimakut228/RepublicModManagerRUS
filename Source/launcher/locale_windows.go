@@ -116,7 +116,7 @@ func currentLocaleCode() string {
 }
 
 func availableLocaleCodes() []string {
-	return []string{localeAuto, localeEnglish, localeRussian}
+	return []string{localeAuto, localeRussian, localeEnglish}
 }
 
 func localeString(code, key string) (string, bool) {

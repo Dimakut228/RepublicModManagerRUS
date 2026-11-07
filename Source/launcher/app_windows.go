@@ -146,49 +146,55 @@ type application struct {
 	playlistDeleteName  string
 	settingsModal       bool
 
-	catalogHelpScroll    int
-	catalogSearch        string
-	catalogSearchFocus   bool
-	catalogIDs           []string
-	catalogItems         map[string]catalogItem
-	catalogTotal         int
-	catalogPage          int
-	catalogSel           int            // index into catalogIDs
-	catalogTags          []string       // selected required tags
-	catalogCategories    []string       // advertised Steam tags
+	catalogHelpScroll     int
+	catalogSearch         string
+	catalogSearchFocus    bool
+	catalogIDs            []string
+	catalogItems          map[string]catalogItem
+	catalogTotal          int
+	catalogPage           int
+	catalogSel            int      // index into catalogIDs
+	catalogTags           []string // selected required tags
+	catalogCategories     []string // advertised Steam tags
 	catalogCategoriesBusy bool
-	catalogBusy          bool
-	catalogFetchGen      uint32
-	catalogDetailScroll  int
-	catalogListX         int
-	catalogListY         int
-	catalogListW         int
-	catalogListH         int
-	catalogOriginalText  string
-	catalogSelectedID    string
-	catalogOffline       bool
-	catalogThumbPending  map[string]bool
-	catalogThumbPath     string
-	catalogThumbID       string
-	catalogThumbBitmap   uintptr
-	translateMu          sync.Mutex
-	translateSource      string // normalised source currently handled
-	translateState       string // "", busy, done, error
-	translateGen         uint32 // increments on every ensureTranslated call
-	translateResult      string
-	translateError       string
-	catalogShowOriginal  bool
-	playlistDropX       int
-	playlistDropY       int
-	playlistDropW       int
-	playlistScroll      int
-	mouseX              int
-	mouseY              int
-	tooltipText         string
-	toastText           string
-	toastUntil          time.Time
-	invalidClickPlugin  int
-	invalidClickAt      time.Time
+	catalogAllCategories  bool
+	catalogBusy           bool
+	catalogFetchGen       uint32
+	catalogDetailScroll   int
+	catalogListX          int
+	catalogListY          int
+	catalogListW          int
+	catalogListH          int
+	catalogDetailX        int
+	catalogDetailY        int
+	catalogDetailW        int
+	catalogDetailH        int
+	catalogOriginalText   string
+	catalogSelectedID     string
+	catalogOffline        bool
+	catalogThumbPending   map[string]bool
+	catalogDescPending    map[string]bool
+	catalogThumbPath      string
+	catalogThumbID        string
+	catalogThumbBitmap    uintptr
+	translateMu           sync.Mutex
+	translateSource       string // normalised source currently handled
+	translateState        string // "", busy, done, error
+	translateGen          uint32 // increments on every ensureTranslated call
+	translateResult       string
+	translateError        string
+	catalogShowOriginal   bool
+	playlistDropX         int
+	playlistDropY         int
+	playlistDropW         int
+	playlistScroll        int
+	mouseX                int
+	mouseY                int
+	tooltipText           string
+	toastText             string
+	toastUntil            time.Time
+	invalidClickPlugin    int
+	invalidClickAt        time.Time
 
 	launchMu            sync.Mutex
 	completion          launchCompletion
@@ -1109,7 +1115,8 @@ func (a *application) handleAction(id string) {
 		a.cfg.TranslationNoticeShown = true
 		_ = saveConfig(a.configPath, a.cfg)
 		a.status = tr("catalog.translate.notice_ack")
-	case "catalog-prev":		if a.catalogPage > 1 {
+	case "catalog-prev":
+		if a.catalogPage > 1 {
 			a.catalogPage--
 			a.startCatalogFetch()
 		} else {
@@ -1160,6 +1167,9 @@ func (a *application) handleAction(id string) {
 		_ = saveConfig(a.configPath, a.cfg)
 		a.catalogPage = 1
 		a.startCatalogFetch()
+	case "catalog-toggle-categories":
+		a.catalogAllCategories = !a.catalogAllCategories
+		invalidateWindow(a.hwnd)
 	case "catalog-search":
 		a.catalogSearchFocus = true
 		a.status = tr("catalog.search.hint")
@@ -1173,7 +1183,8 @@ func (a *application) handleAction(id string) {
 	case "catalog-open-page":
 		a.openCatalogWorkshopPage()
 	}
-	if strings.HasPrefix(id, "plugin-row:") {		var index int
+	if strings.HasPrefix(id, "plugin-row:") {
+		var index int
 		_, _ = fmt.Sscanf(id, "plugin-row:%d", &index)
 		if index >= 0 && index < len(a.plugins) {
 			if a.selected != index {
@@ -1357,7 +1368,7 @@ func (a *application) handleAction(id string) {
 		}
 		next := order[nextIdx]
 		applyLanguageSetting(a, next)
-		a.status = tr("t.language_selected_"+next)
+		a.status = tr("t.language_selected_" + next)
 	case "settings-translate-toggle":
 		a.cfg.AutoTranslate = !a.cfg.AutoTranslate
 		_ = saveConfig(a.configPath, a.cfg)

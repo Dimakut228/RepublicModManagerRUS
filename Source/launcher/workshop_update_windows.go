@@ -768,7 +768,34 @@ func forceUpdateWorkshopItem(gamePath, id string) workshopForceUpdateOutcome {
 
 func formatWorkshopUpdateTime(ts int64) string {
 	if ts <= 0 {
-		return "Unknown"
+		return tr("t.unknown")
 	}
-	return time.Unix(ts, 0).Local().Format("02 Jan 2006 15:04")
+	layout := "02 Jan 2006 15:04"
+	if currentLocaleCode() == localeRussian {
+		layout = "02.01.2006 15:04"
+	}
+	return time.Unix(ts, 0).Local().Format(layout)
+}
+
+// updateStateLabel localizes the machine update-state token shown in the
+// Workshop detail card.
+func updateStateLabel(state string) string {
+	switch state {
+	case "current":
+		return tr("update.state.current")
+	case "update":
+		return tr("update.state.update")
+	case "stale":
+		return tr("update.state.stale")
+	case "downloading":
+		return tr("update.state.downloading")
+	case "missing":
+		return tr("update.state.missing")
+	case "unavailable":
+		return tr("update.state.unavailable")
+	case "unknown":
+		return tr("update.state.unknown")
+	default:
+		return strings.ToUpper(state)
+	}
 }

@@ -112,7 +112,7 @@ func TestApplyLanguageSwitchesLocale(t *testing.T) {
 }
 
 func TestAvailableLocaleCodes(t *testing.T) {
-	want := []string{"auto", "en", "ru"}
+	want := []string{"auto", "ru", "en"}
 	if got := availableLocaleCodes(); !reflect.DeepEqual(got, want) {
 		t.Errorf("availableLocaleCodes() = %v, want %v", got, want)
 	}

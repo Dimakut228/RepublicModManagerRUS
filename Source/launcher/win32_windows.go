@@ -194,6 +194,7 @@ var (
 	procSetTimer                      = user32.NewProc("SetTimer")
 	procKillTimer                     = user32.NewProc("KillTimer")
 	procSetWindowPos                  = user32.NewProc("SetWindowPos")
+	procScreenToClient                = user32.NewProc("ScreenToClient")
 	procSetWindowTextW                = user32.NewProc("SetWindowTextW")
 	procGetDpiForWindow               = user32.NewProc("GetDpiForWindow")
 	procSetProcessDpiAwarenessContext = user32.NewProc("SetProcessDpiAwarenessContext")
@@ -352,6 +353,19 @@ func rgb(r, g, b byte) uint32 { return uint32(r) | uint32(g)<<8 | uint32(b)<<16 
 
 func lowWord(v uintptr) int  { return int(int16(v & 0xFFFF)) }
 func highWord(v uintptr) int { return int(int16((v >> 16) & 0xFFFF)) }
+
+type winPoint struct {
+	X int32
+	Y int32
+}
+
+// wheelClientPoint converts the screen coordinates embedded in WM_MOUSEWHEEL
+// into window-client coordinates without relying on a prior mouse-move event.
+func wheelClientPoint(hwnd uintptr, lparam uintptr) (int, int) {
+	point := winPoint{X: int32(lowWord(lparam)), Y: int32(highWord(lparam))}
+	procScreenToClient.Call(hwnd, uintptr(unsafe.Pointer(&point)))
+	return int(point.X), int(point.Y)
+}
 
 func invalidateWindow(hwnd uintptr) {
 	if hwnd != 0 {

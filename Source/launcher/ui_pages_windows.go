@@ -345,7 +345,8 @@ func statusIndicatesFailure(status string) bool {
 	return false
 }
 
-func drawStatusBar(c *canvas, x, y, w, h int) {	c.fillRect(x, y, w, h, palette.Sidebar)
+func drawStatusBar(c *canvas, x, y, w, h int) {
+	c.fillRect(x, y, w, h, palette.Sidebar)
 	c.line(x, y, x+w, y, c.s(1), palette.Border)
 	tx := x + c.s(24)
 	if c.app.busy {
@@ -422,7 +423,7 @@ func drawWorkshopForceUpdateModal(c *canvas) {
 }
 
 func drawDashboardPage(c *canvas, x, y, w, h int) {
-	cursor := c.sectionTitle(tr("t.central_committee"), "Republic Mod Loader", "", x, y, w)
+	cursor := c.sectionTitle(tr("t.central_committee"), tr("dashboard.header_title"), "", x, y, w)
 
 	gameH := c.s(168)
 	c.card(x, cursor, w, gameH)
@@ -746,13 +747,13 @@ func drawScrollableDescription(c *canvas, view int, text string, x, y, w, h int,
 }
 
 func drawPluginsPage(c *canvas, x, y, w, h int) {
-	cursor := c.sectionTitle(tr("t.bureau_of_modification"), "Mod Manager", "", x, y, w)
+	cursor := c.sectionTitle(tr("t.bureau_of_modification"), tr("t.mod_manager_title"), "", x, y, w)
 
 	switchW, switchH := c.s(420), c.s(38)
 	switchX := x
 	c.roundedRect(switchX, cursor, switchW, switchH, c.s(10), palette.Surface, palette.Border)
 	third := switchW / 3
-	labels := []string{tr("t.plugins"), tr("t.workshop"), tr("t.development")}
+	labels := []string{tr("t.plugins"), tr("t.workshop_tab_label"), tr("t.development")}
 	hits := []string{"mod-view:plugins", "mod-view:workshop", "mod-view:development"}
 	for i := 0; i < 3; i++ {
 		bx := switchX + i*third
@@ -778,11 +779,11 @@ func drawPluginsPage(c *canvas, x, y, w, h int) {
 	c.roundedRect(x, cursor, w, toolbarH, c.s(11), palette.Surface, palette.Border)
 	row1Y := cursor + c.s(7)
 	row2Y := cursor + c.s(46)
-	c.compactButton("refresh", tr("t.refresh"), x+c.s(8), row1Y, c.s(76), c.s(32))
+	c.compactButton("refresh", tr("t.refresh"), x+c.s(8), row1Y, c.s(90), c.s(32))
 	if c.app.modView == 2 {
-		c.compactButton("development-open-root", tr("t.open_projects_folder"), x+c.s(91), row1Y, c.s(142), c.s(32))
+		c.compactButton("development-open-root", tr("t.open_projects_folder"), x+c.s(105), row1Y, c.s(142), c.s(32))
 	} else {
-		c.compactButton("mod-scan-updates", tr("t.scan_for_updates"), x+c.s(91), row1Y, c.s(126), c.s(32))
+		c.compactButton("mod-scan-updates", tr("t.scan_for_updates"), x+c.s(105), row1Y, c.s(126), c.s(32))
 	}
 
 	allLabel := tr("t.all_plugins")
@@ -1127,16 +1128,16 @@ func drawPluginDetail(c *canvas, x, y, w, h int) {
 		return
 	}
 	c.label(tr("t.plugin_details"), x+c.s(20), y+c.s(16), w-c.s(40), palette.TextMuted)
-	c.text(p.Manifest.Name, x+c.s(20), y+c.s(37), w-c.s(40), c.s(36), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(p.Manifest.Name, x+c.s(20), y+c.s(37), w-c.s(40)-c.s(128), c.s(36), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 	sourceLine := tr("t.local_plugin")
 	if p.WorkshopID != "" {
 		sourceLine = tr("t.workshop_id") + p.WorkshopID
 	}
-	c.text(sourceLine, x+c.s(20), y+c.s(72), w-c.s(40), c.s(24), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(sourceLine, x+c.s(20), y+c.s(72), w-c.s(40)-c.s(128), c.s(24), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 
-	thumbX, thumbY := x+c.s(20), y+c.s(105)
-	thumbW := detailThumbnailWidth(c, w)
-	thumbH := c.s(108)
+	thumbW := c.s(112)
+	thumbH := c.s(72)
+	thumbX, thumbY := x+w-c.s(20)-thumbW, y+c.s(38)
 	c.roundedRect(thumbX, thumbY, thumbW, thumbH, c.s(9), palette.Background, palette.Border)
 	if image := c.app.ensurePluginImage(); image != 0 {
 		drawGDIPlusImageContainedNative(c.dc, image, thumbX+c.s(3), thumbY+c.s(3), thumbW-c.s(6), thumbH-c.s(6))
@@ -1150,17 +1151,17 @@ func drawPluginDetail(c *canvas, x, y, w, h int) {
 	} else if p.Setting.Enabled {
 		pluginState, pluginStateClass = tr("t.enabled"), 0
 	}
-	metaX := thumbX + thumbW + c.s(14)
-	metaW := maxInt(c.s(82), x+w-metaX-c.s(20))
-	c.pill(pluginState, pluginStateClass, metaX, thumbY+c.s(8), minInt(c.s(104), metaW), c.s(28))
-	c.text(pluginInterfaceSummary(p), metaX, thumbY+c.s(42), metaW, c.s(22), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text(pluginLoadPathSummary(p), metaX, thumbY+c.s(65), metaW, c.s(22), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	metaX := x + c.s(20)
+	metaW := w - c.s(40) - thumbW - c.s(16)
+	c.pill(pluginState, pluginStateClass, metaX, y+c.s(96), minInt(c.s(104), metaW), c.s(28))
+	c.text(pluginInterfaceSummary(p), metaX, y+c.s(130), metaW, c.s(22), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(pluginLoadPathSummary(p), metaX, y+c.s(153), metaW, c.s(22), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 	thirdLine := tr("t.binary") + p.PEValidation.Architecture + " • " + p.PEValidation.PEFormat
 	thirdColor := palette.TextMuted
 	if item := c.app.pluginWorkshopItem(p); item != nil {
 		label := workshopUpdateShortLabel(item)
 		if label != "" {
-			thirdLine = tr("t.update") + strings.ToUpper(label)
+			thirdLine = tr("t.update") + label
 			switch item.UpdateState {
 			case "current":
 				thirdColor = palette.Good
@@ -1173,23 +1174,22 @@ func drawPluginDetail(c *canvas, x, y, w, h int) {
 			}
 		}
 	}
-	c.text(thirdLine, metaX, thumbY+c.s(87), metaW, c.s(18), fonts.Tiny, thirdColor, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(thirdLine, metaX, y+c.s(176), metaW, c.s(20), fonts.Tiny, thirdColor, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 
-	buttonY3 := y + h - c.s(60)
-	buttonY2 := buttonY3 - c.s(48)
-	buttonY1 := buttonY2 - c.s(48)
+	buttonY3 := y + h - c.s(52)
+	buttonY2 := buttonY3 - c.s(38)
+	buttonY1 := buttonY2 - c.s(38)
 	buttonTop := buttonY3
 	if p.WorkshopID != "" {
 		buttonTop = buttonY1
 	}
-	controlY := buttonTop - c.s(64)
-	heroBottom := thumbY + thumbH
-	descLabelY := heroBottom + c.s(14)
+	controlY := buttonTop - c.s(54)
+	descLabelY := y + c.s(196)
 	descTextY := descLabelY + c.s(20)
-	if controlY < descTextY+c.s(42) {
-		controlY = descTextY + c.s(42)
+	if controlY < descTextY+c.s(40) {
+		controlY = descTextY + c.s(40)
 	}
-	descH := maxInt(c.s(36), controlY-descTextY-c.s(10))
+	descH := maxInt(c.s(30), controlY-descTextY-c.s(8))
 	c.label(tr("t.description"), x+c.s(20), descLabelY, w-c.s(40), palette.TextFaint)
 	body := p.Manifest.Description
 	if len(p.Manifest.Dependencies) > 0 {
@@ -1203,7 +1203,8 @@ func drawPluginDetail(c *canvas, x, y, w, h int) {
 	if len(p.Reasons) > 0 && p.BasicValid {
 		body += tr("t.n_nruntime_metadata_notes") + strings.Join(p.Reasons, "  •  ")
 	}
-	body += tr("t.n_n") + pluginValidationDetails(p)
+	body += "\n" + pluginValidationDetails(p)
+	body = strings.TrimLeft(body, "\r\n")
 	bannerW := w - c.s(40)
 	bannerHeights := []int(nil)
 	bannerBlockH := 0
@@ -1248,17 +1249,17 @@ func drawPluginDetail(c *canvas, x, y, w, h int) {
 	if p.WorkshopID != "" {
 		gap := c.s(8)
 		buttonW := (w - c.s(40) - gap) / 2
-		c.buttonEnabled("plugin-open-settings", settingsLabel, x+c.s(20), buttonY1, w-c.s(40), c.s(40), false, settingsAvailable)
-		c.button("plugin-workshop-open-page", tr("t.open_workshop"), x+c.s(20), buttonY2, buttonW, c.s(40), false)
-		c.button("plugin-workshop-open-folder", tr("t.open_file_location"), x+c.s(20)+buttonW+gap, buttonY2, buttonW, c.s(40), false)
+		c.buttonEnabled("plugin-open-settings", settingsLabel, x+c.s(20), buttonY1, w-c.s(40), c.s(36), false, settingsAvailable)
+		c.button("plugin-workshop-open-page", tr("t.open_workshop"), x+c.s(20), buttonY2, buttonW, c.s(36), false)
+		c.button("plugin-workshop-open-folder", tr("t.open_file_location"), x+c.s(20)+buttonW+gap, buttonY2, buttonW, c.s(36), false)
 		canAction := !c.app.workshopActionBusy && !c.app.workshopUpdateBusy
 		if item := c.app.workshopItemByID(p.WorkshopID); item != nil && item.Unsubscribed {
 			canAction = false
 		}
-		c.button("plugin-workshop-force-update", tr("t.force_update"), x+c.s(20), buttonY3, buttonW, c.s(40), true)
-		c.dangerButton("plugin-workshop-unsubscribe", tr("t.unsubscribe"), x+c.s(20)+buttonW+gap, buttonY3, buttonW, c.s(40), canAction)
+		c.button("plugin-workshop-force-update", tr("t.force_update"), x+c.s(20), buttonY3, buttonW, c.s(36), true)
+		c.dangerButton("plugin-workshop-unsubscribe", tr("t.unsubscribe"), x+c.s(20)+buttonW+gap, buttonY3, buttonW, c.s(36), canAction)
 	} else {
-		c.buttonEnabled("plugin-open-settings", settingsLabel, x+c.s(20), buttonY3, w-c.s(40), c.s(40), false, settingsAvailable)
+		c.buttonEnabled("plugin-open-settings", settingsLabel, x+c.s(20), buttonY3, w-c.s(40), c.s(36), false, settingsAvailable)
 	}
 }
 
@@ -1339,7 +1340,7 @@ func drawDevelopmentDetail(c *canvas, x, y, w, h int) {
 
 	thumbX, thumbY := x+c.s(20), y+c.s(105)
 	thumbW := detailThumbnailWidth(c, w)
-	thumbH := c.s(108)
+	thumbH := c.s(88)
 	c.roundedRect(thumbX, thumbY, thumbW, thumbH, c.s(9), palette.Background, palette.Border)
 	if image := c.app.ensureDevelopmentImage(); image != 0 {
 		drawGDIPlusImageContainedNative(c.dc, image, thumbX+c.s(3), thumbY+c.s(3), thumbW-c.s(6), thumbH-c.s(6))
@@ -1452,10 +1453,10 @@ func drawWorkshopTable(c *canvas, x, y, w, h int) {
 			sub = tr("t.unsubscribed")
 			subColor = palette.Bad
 		} else if item.UpdateState == "stale" {
-			sub = tr("t.potentially_stale") + item.UpdateReason
+			sub = tr("t.potentially_stale") + localizeReason(item.UpdateReason)
 			subColor = palette.Warn
 		} else if item.UpdateState == "update" {
-			sub = tr("t.update_available") + item.UpdateReason
+			sub = tr("t.update_available") + localizeReason(item.UpdateReason)
 			subColor = palette.Warn
 		} else if item.UpdateState == "downloading" {
 			sub = tr("t.steam_update_downloading_queued")
@@ -1501,20 +1502,12 @@ func drawWorkshopDetail(c *canvas, x, y, w, h int) {
 		return
 	}
 	c.label(tr("t.workshop_details"), x+c.s(20), y+c.s(16), w-c.s(40), palette.TextMuted)
-	c.text(item.Name, x+c.s(20), y+c.s(37), w-c.s(40), c.s(36), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text(tr("t.workshop_id")+item.ID, x+c.s(20), y+c.s(72), w-c.s(40), c.s(24), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(item.Name, x+c.s(20), y+c.s(37), w-c.s(40)-c.s(128), c.s(36), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("t.workshop_id")+item.ID, x+c.s(20), y+c.s(72), w-c.s(40)-c.s(128), c.s(24), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 
-	thumbX, thumbY := x+c.s(20), y+c.s(105)
-	if item.Unsupported {
-		reason := tr("t.needs_attention")
-		if len(item.UnsupportedReasons) > 0 {
-			reason += ": " + strings.Join(localizeWarnings(item.UnsupportedReasons), "; ")
-		}
-		c.text(reason, x+c.s(20), y+c.s(96), w-c.s(40), c.s(29), fonts.Tiny, palette.Bad, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-		thumbY = y + c.s(126)
-	}
-	thumbW := detailThumbnailWidth(c, w)
-	thumbH := c.s(108)
+	thumbW := c.s(112)
+	thumbH := c.s(72)
+	thumbX, thumbY := x+w-c.s(20)-thumbW, y+c.s(38)
 	c.roundedRect(thumbX, thumbY, thumbW, thumbH, c.s(9), palette.Background, palette.Border)
 	image := c.app.ensureWorkshopImage()
 	if image != 0 {
@@ -1530,16 +1523,24 @@ func drawWorkshopDetail(c *canvas, x, y, w, h int) {
 	if item.Unsubscribed {
 		state, class = tr("t.unsubscribed"), 2
 	}
-	c.pill(state, class, thumbX+thumbW+c.s(14), thumbY+c.s(8), c.s(104), c.s(28))
+	c.pill(state, class, x+c.s(20), y+c.s(96), c.s(104), c.s(28))
 	workshopStateDetail := tr("t.playlist_inclusion")
 	if len(item.EmbeddedPluginIDs) > 0 {
 		workshopStateDetail = fmt.Sprintf(tr("t.hybrid_package_d_linked"), len(item.EmbeddedPluginIDs))
 	}
-	c.text(workshopStateDetail, thumbX+thumbW+c.s(14), thumbY+c.s(42), maxInt(c.s(80), w-thumbW-c.s(54)), c.s(48), fonts.Tiny, palette.TextMuted, dtLeft|dtWordBreak)
+	if item.Unsupported {
+		reason := tr("t.needs_attention")
+		if len(item.UnsupportedReasons) > 0 {
+			reason += ": " + strings.Join(localizeWarnings(item.UnsupportedReasons), "; ")
+		}
+		c.text(reason, x+c.s(20), y+c.s(130), w-c.s(40)-thumbW-c.s(16), c.s(26), fonts.Tiny, palette.Bad, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	} else {
+		c.text(workshopStateDetail, x+c.s(20), y+c.s(130), w-c.s(40)-thumbW-c.s(16), c.s(26), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	}
 
-	descY := thumbY + thumbH + c.s(16)
+	descY := y + c.s(160)
 	if item.UpdateState != "" {
-		updateLabel := strings.ToUpper(item.UpdateState)
+		updateLabel := updateStateLabel(item.UpdateState)
 		updateColor := palette.TextMuted
 		if item.UpdateState == "current" {
 			updateColor = palette.Good
@@ -1552,29 +1553,29 @@ func drawWorkshopDetail(c *canvas, x, y, w, h int) {
 		}
 		c.label(tr("t.update_status"), x+c.s(20), descY, w-c.s(40), palette.TextFaint)
 		descY += c.s(19)
-		c.text(updateLabel+"  •  "+item.UpdateReason, x+c.s(20), descY, w-c.s(40), c.s(30), fonts.Tiny, updateColor, dtLeft|dtWordBreak)
-		descY += c.s(31)
+		c.text(updateLabel+"  •  "+localizeReason(item.UpdateReason), x+c.s(20), descY, w-c.s(40), c.s(22), fonts.Tiny, updateColor, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		descY += c.s(23)
 		times := tr("t.installed") + formatWorkshopUpdateTime(item.InstalledUpdatedUnix) + tr("t.workshop") + formatWorkshopUpdateTime(item.RemoteUpdatedUnix)
 		c.text(times, x+c.s(20), descY, w-c.s(40), c.s(20), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-		descY += c.s(25)
+		descY += c.s(23)
 	}
 	c.label(tr("t.description"), x+c.s(20), descY, w-c.s(40), palette.TextFaint)
 	descY += c.s(20)
-	buttonY2 := y + h - c.s(62)
-	buttonY1 := buttonY2 - c.s(48)
-	descH := maxInt(c.s(55), buttonY1-descY-c.s(12))
+	buttonY2 := y + h - c.s(56)
+	buttonY1 := buttonY2 - c.s(44)
+	descH := maxInt(c.s(44), buttonY1-descY-c.s(10))
 	drawScrollableDescription(c, 1, item.Description, x+c.s(20), descY, w-c.s(40), descH, fonts.Small, palette.TextMuted)
 	gap := c.s(8)
 	buttonW := (w - c.s(40) - gap) / 2
-	c.button("workshop-open-page", tr("t.open_workshop"), x+c.s(20), buttonY1, buttonW, c.s(40), false)
-	c.button("workshop-open-folder", tr("t.open_file_location"), x+c.s(20)+buttonW+gap, buttonY1, buttonW, c.s(40), false)
-	c.button("workshop-force-update", tr("t.force_update"), x+c.s(20), buttonY2, buttonW, c.s(40), true)
+	c.button("workshop-open-page", tr("t.open_workshop"), x+c.s(20), buttonY1, buttonW, c.s(36), false)
+	c.button("workshop-open-folder", tr("t.open_file_location"), x+c.s(20)+buttonW+gap, buttonY1, buttonW, c.s(36), false)
+	c.button("workshop-force-update", tr("t.force_update"), x+c.s(20), buttonY2, buttonW, c.s(36), true)
 	canUnsubscribe := !c.app.workshopActionBusy && !c.app.workshopUpdateBusy && !item.Unsubscribed
-	c.dangerButton("workshop-unsubscribe", tr("t.unsubscribe"), x+c.s(20)+buttonW+gap, buttonY2, buttonW, c.s(40), canUnsubscribe)
+	c.dangerButton("workshop-unsubscribe", tr("t.unsubscribe"), x+c.s(20)+buttonW+gap, buttonY2, buttonW, c.s(36), canUnsubscribe)
 }
 
 func drawDiagnosticsPage(c *canvas, x, y, w, h int) {
-	cursor := c.sectionTitle(tr("t.support_diagnostics"), "Diagnostics", "", x, y, w)
+	cursor := c.sectionTitle(tr("t.support_diagnostics"), tr("t.diagnostics_title"), "", x, y, w)
 	gap := c.s(14)
 	topH := c.s(104)
 	cardW := (w - gap*2) / 3
