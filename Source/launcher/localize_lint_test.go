@@ -18,6 +18,19 @@ var taskScopeFunctions = []string{
 	"drawBuildSHATooltip",
 	"drawGenericTooltip",
 	"drawToast",
+	"drawModSearchBox",
+	"drawPluginsPage",
+	"drawPluginTable",
+	"pluginInterfaceSummary",
+	"pluginLoadPathSummary",
+	"pluginValidationDetails",
+	"drawPluginValidationBanners",
+	"drawPluginDetail",
+	"drawDevelopmentTable",
+	"drawDevelopmentDetail",
+	"drawWorkshopTable",
+	"drawWorkshopDetail",
+	"drawDiagnosticsPage",
 }
 
 var displayCallRe = regexp.MustCompile(`c\.(label|text|metricCard|sectionTitle)\(`)

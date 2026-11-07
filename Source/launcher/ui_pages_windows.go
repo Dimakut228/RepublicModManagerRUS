@@ -579,7 +579,7 @@ func drawModSearchBox(c *canvas, x, y, w, h int) {
 	display := text
 	color := palette.Text
 	if display == "" {
-		display, color = "Search name / ID…", palette.TextFaint
+		display, color = tr("t.search_name_id"), palette.TextFaint
 	}
 	if active && text != "" {
 		display += "  │"
@@ -702,13 +702,13 @@ func drawScrollableDescription(c *canvas, view int, text string, x, y, w, h int,
 }
 
 func drawPluginsPage(c *canvas, x, y, w, h int) {
-	cursor := c.sectionTitle("BUREAU OF MODIFICATION", "Mod Manager", "", x, y, w)
+	cursor := c.sectionTitle(tr("t.bureau_of_modification"), "Mod Manager", "", x, y, w)
 
 	switchW, switchH := c.s(420), c.s(38)
 	switchX := x
 	c.roundedRect(switchX, cursor, switchW, switchH, c.s(10), palette.Surface, palette.Border)
 	third := switchW / 3
-	labels := []string{"Plugins", "Workshop", "Development"}
+	labels := []string{tr("t.plugins"), tr("t.workshop"), tr("t.development")}
 	hits := []string{"mod-view:plugins", "mod-view:workshop", "mod-view:development"}
 	for i := 0; i < 3; i++ {
 		bx := switchX + i*third
@@ -734,24 +734,24 @@ func drawPluginsPage(c *canvas, x, y, w, h int) {
 	c.roundedRect(x, cursor, w, toolbarH, c.s(11), palette.Surface, palette.Border)
 	row1Y := cursor + c.s(7)
 	row2Y := cursor + c.s(46)
-	c.compactButton("refresh", "Refresh", x+c.s(8), row1Y, c.s(76), c.s(32))
+	c.compactButton("refresh", tr("t.refresh"), x+c.s(8), row1Y, c.s(76), c.s(32))
 	if c.app.modView == 2 {
-		c.compactButton("development-open-root", "Open projects folder", x+c.s(91), row1Y, c.s(142), c.s(32))
+		c.compactButton("development-open-root", tr("t.open_projects_folder"), x+c.s(91), row1Y, c.s(142), c.s(32))
 	} else {
-		c.compactButton("mod-scan-updates", "Scan for updates", x+c.s(91), row1Y, c.s(126), c.s(32))
+		c.compactButton("mod-scan-updates", tr("t.scan_for_updates"), x+c.s(91), row1Y, c.s(126), c.s(32))
 	}
 
-	allLabel := "All Plugins"
+	allLabel := tr("t.all_plugins")
 	allValue := c.app.allPluginsEnabled()
 	hideValue := c.app.cfg.HideDisabledPlugins
 	needsValue := c.app.cfg.PluginNeedsAttentionOnly
 	if c.app.modView == 1 {
-		allLabel = "All Workshop"
+		allLabel = tr("t.all_workshop")
 		allValue = c.app.allWorkshopEnabled()
 		hideValue = c.app.cfg.HideDisabledWorkshop
 		needsValue = c.app.cfg.WorkshopNeedsAttentionOnly
 	} else if c.app.modView == 2 {
-		allLabel = "All Development"
+		allLabel = tr("t.all_development")
 		allValue = c.app.allDevelopmentEnabled()
 		hideValue = c.app.cfg.HideDisabledDevelopment
 		needsValue = false
@@ -760,30 +760,30 @@ func drawPluginsPage(c *canvas, x, y, w, h int) {
 	c.text(allLabel, allX, row1Y, c.s(96), c.s(32), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 	c.toggle("mod-enable-all", allValue, allX+c.s(98), row1Y+c.s(6))
 	hideX := allX + c.s(152)
-	c.text("Hide Disabled", hideX, row1Y, c.s(96), c.s(32), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("t.hide_disabled"), hideX, row1Y, c.s(96), c.s(32), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 	c.toggle("mod-hide-disabled", hideValue, hideX+c.s(98), row1Y+c.s(6))
 
 	attentionX := x + c.s(10)
 	searchX := attentionX
 	attentionW := 0
 	if c.app.modView != 2 {
-		c.text("Needs Attention", attentionX, row2Y, c.s(106), c.s(32), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.text(tr("t.needs_attention"), attentionX, row2Y, c.s(106), c.s(32), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		c.toggle("mod-needs-attention", needsValue, attentionX+c.s(108), row2Y+c.s(6))
 		attentionW = c.s(162)
 		searchX = attentionX + attentionW
 	}
 	if c.app.modView == 1 {
 		pluginOnlyX := searchX
-		c.text("Includes DLL", pluginOnlyX, row2Y, c.s(86), c.s(32), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.text(tr("t.includes_dll"), pluginOnlyX, row2Y, c.s(86), c.s(32), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		c.toggle("mod-includes-plugin", c.app.cfg.WorkshopIncludesPluginOnly, pluginOnlyX+c.s(88), row2Y+c.s(6))
 		searchX = pluginOnlyX + c.s(140)
 	}
 	gap2 := c.s(7)
 	autoW, resetW := 0, 0
 	if c.app.modView == 0 {
-		autoLabel := "Auto order: " + map[bool]string{true: "On", false: "Off"}[c.app.cfg.AutoOrder]
+		autoLabel := tr("t.auto_order") + map[bool]string{true: tr("t.on"), false: tr("t.off")}[c.app.cfg.AutoOrder]
 		autoW = maxInt(c.s(100), c.textWidth(autoLabel, fonts.SmallStrong)+c.s(18))
-		resetW = maxInt(c.s(118), c.textWidth("Reset recommended", fonts.SmallStrong)+c.s(18))
+		resetW = maxInt(c.s(118), c.textWidth(tr("t.reset_recommended"), fonts.SmallStrong)+c.s(18))
 	}
 	reservedRight := c.s(10)
 	if autoW > 0 {
@@ -794,18 +794,18 @@ func drawPluginsPage(c *canvas, x, y, w, h int) {
 	drawModSearchBox(c, searchX, row2Y, searchW, c.s(32))
 	nextX := searchX + searchW + c.s(9)
 	if c.app.modView == 0 {
-		autoLabel := "Auto order: " + map[bool]string{true: "On", false: "Off"}[c.app.cfg.AutoOrder]
+		autoLabel := tr("t.auto_order") + map[bool]string{true: tr("t.on"), false: tr("t.off")}[c.app.cfg.AutoOrder]
 		c.compactButton("auto-order", autoLabel, nextX, row2Y, autoW, c.s(32))
 		nextX += autoW + gap2
-		c.compactButton("reset", "Reset recommended", nextX, row2Y, resetW, c.s(32))
+		c.compactButton("reset", tr("t.reset_recommended"), nextX, row2Y, resetW, c.s(32))
 		nextX += resetW + gap2
 	}
 	if w-(nextX-x) > c.s(110) {
-		summary := fmt.Sprintf("%d shown / %d total", len(c.app.visiblePluginIndices()), len(c.app.plugins))
+		summary := fmt.Sprintf(tr("t.d_shown_d_total"), len(c.app.visiblePluginIndices()), len(c.app.plugins))
 		if c.app.modView == 1 {
-			summary = fmt.Sprintf("%d shown / %d installed", len(c.app.visibleWorkshopIndices()), len(c.app.workshopItems))
+			summary = fmt.Sprintf(tr("t.d_shown_d_installed"), len(c.app.visibleWorkshopIndices()), len(c.app.workshopItems))
 		} else if c.app.modView == 2 {
-			summary = fmt.Sprintf("%d shown / %d local", len(c.app.visibleDevelopmentIndices()), len(c.app.developmentItems))
+			summary = fmt.Sprintf(tr("t.d_shown_d_local"), len(c.app.visibleDevelopmentIndices()), len(c.app.developmentItems))
 		}
 		c.text(summary, nextX, row2Y, x+w-nextX-c.s(10), c.s(32), fonts.Tiny, palette.TextMuted, dtRight|dtVCenter|dtSingleLine|dtEndEllipsis)
 	}
@@ -813,7 +813,7 @@ func drawPluginsPage(c *canvas, x, y, w, h int) {
 
 	playlistH := c.s(50)
 	c.roundedRect(x, cursor, w, playlistH, c.s(11), palette.Surface, palette.Border)
-	c.label("Playlist", x+c.s(14), cursor+c.s(5), c.s(75), palette.TextFaint)
+	c.label(tr("dashboard.playlist.label"), x+c.s(14), cursor+c.s(5), c.s(75), palette.TextFaint)
 	name := c.app.cfg.SelectedPlaylist
 	if name == "" {
 		name = defaultPlaylistName
@@ -838,11 +838,11 @@ func drawPluginsPage(c *canvas, x, y, w, h int) {
 	gapB := c.s(8)
 	startX := x + w - (buttonSize*5 + gapB*4) - c.s(8)
 	canEdit := !strings.EqualFold(name, defaultPlaylistName) && c.app.selectedPlaylistIndex() >= 0
-	c.squareIconButton("playlist-save", "save", startX, dropY, buttonSize, false, true, "Save Playlist")
-	c.squareIconButton("playlist-rename", "pencil", startX+(buttonSize+gapB), dropY, buttonSize, false, canEdit, "Rename Playlist")
-	c.squareIconButton("playlist-export", "export", startX+2*(buttonSize+gapB), dropY, buttonSize, false, canEdit, "Export Playlist")
-	c.squareIconButton("playlist-import", "import", startX+3*(buttonSize+gapB), dropY, buttonSize, false, true, "Import Playlist")
-	c.squareIconButton("playlist-delete", "trash", startX+4*(buttonSize+gapB), dropY, buttonSize, true, canEdit, "Delete Playlist")
+	c.squareIconButton("playlist-save", "save", startX, dropY, buttonSize, false, true, tr("t.save_playlist"))
+	c.squareIconButton("playlist-rename", "pencil", startX+(buttonSize+gapB), dropY, buttonSize, false, canEdit, tr("t.rename_playlist"))
+	c.squareIconButton("playlist-export", "export", startX+2*(buttonSize+gapB), dropY, buttonSize, false, canEdit, tr("t.export_playlist"))
+	c.squareIconButton("playlist-import", "import", startX+3*(buttonSize+gapB), dropY, buttonSize, false, true, tr("t.import_playlist"))
+	c.squareIconButton("playlist-delete", "trash", startX+4*(buttonSize+gapB), dropY, buttonSize, true, canEdit, tr("t.delete_playlist"))
 	cursor += playlistH + c.s(12)
 
 	gap := c.s(14)
@@ -870,9 +870,9 @@ func drawPluginTable(c *canvas, x, y, w, h int) {
 	statusX := x + w - statusW - c.s(8)
 	idW := c.s(92)
 	idX := statusX - idW - c.s(10)
-	c.text("PLUGIN", x+c.s(18), y, maxInt(c.s(60), idX-x-c.s(28)), headerH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
-	c.text("ITEM ID", idX, y, idW, headerH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text("STATUS", statusX, y, statusW, headerH, fonts.Tiny, palette.TextMuted, dtCenter|dtVCenter|dtSingleLine)
+	c.text(tr("t.plugin"), x+c.s(18), y, maxInt(c.s(60), idX-x-c.s(28)), headerH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+	c.text(tr("t.item_id"), idX, y, idW, headerH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("t.status"), statusX, y, statusW, headerH, fonts.Tiny, palette.TextMuted, dtCenter|dtVCenter|dtSingleLine)
 
 	rowH := c.s(61)
 	maxRows := maxInt(1, (h-headerH-c.s(6))/rowH)
@@ -930,14 +930,14 @@ func drawPluginTable(c *canvas, x, y, w, h int) {
 			}
 		}
 		if p.BasicValid && p.Setting.Enabled && !canLoad(p) {
-			pluginSubline += "  •  Needs attention"
+			pluginSubline += tr("t.needs_attention")
 			pluginSubColor = palette.Bad
-		} else if p.BasicValid && p.Setting.Enabled && p.Status == "WARNING" {
-			pluginSubline += "  •  Warning"
+		} else if p.BasicValid && p.Setting.Enabled && p.Status == tr("t.warning") {
+			pluginSubline += tr("t.warning")
 			pluginSubColor = palette.Warn
 		}
 		c.text(pluginSubline, x+c.s(18), rowY+c.s(31), nameW, c.s(20), fonts.Tiny, pluginSubColor, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-		itemID := "N/A"
+		itemID := tr("t.n_a")
 		if p.WorkshopID != "" {
 			itemID = p.WorkshopID
 		}
@@ -954,9 +954,9 @@ func drawPluginTable(c *canvas, x, y, w, h int) {
 	c.app.modListX, c.app.modListY, c.app.modListW, c.app.modListH = x, y+headerH, w, h-headerH
 	drawListScrollbar(c, "plugin", x+w-c.s(10), y+headerH+c.s(4), c.s(6), h-headerH-c.s(8), len(visible), maxRows, offset)
 	if len(visible) == 0 {
-		msg := "No plugins match the current search/filter."
+		msg := tr("t.no_plugins_match_the")
 		if len(c.app.plugins) == 0 {
-			msg = "No plugin DLLs were found in enabled Workshop plugin folders or rml\\plugins."
+			msg = tr("t.no_plugin_dlls_were")
 		}
 		c.text(msg, x+c.s(22), y+c.s(70), w-c.s(44), c.s(70), fonts.Body, palette.TextMuted, dtCenter|dtVCenter|dtWordBreak)
 	}
@@ -964,39 +964,39 @@ func drawPluginTable(c *canvas, x, y, w, h int) {
 
 func pluginInterfaceSummary(p *Plugin) string {
 	if p == nil {
-		return "Interfaces: unknown"
+		return tr("t.interfaces_unknown")
 	}
 	parts := []string{}
 	if p.HasRMLInterface {
-		parts = append(parts, "RML")
+		parts = append(parts, tr("t.rml"))
 	}
 	if p.HasTesmioInterface {
 		if p.LegacyAPI > 0 {
-			parts = append(parts, fmt.Sprintf("Tesmio API %d", p.LegacyAPI))
+			parts = append(parts, fmt.Sprintf(tr("t.tesmio_api_d"), p.LegacyAPI))
 		} else {
-			parts = append(parts, "Tesmio")
+			parts = append(parts, tr("t.tesmio"))
 		}
 	}
 	if len(parts) == 0 {
-		return "Interface: Raw/native DLL"
+		return tr("t.interface_raw_native_dll")
 	}
-	return "Interfaces: " + strings.Join(parts, " + ")
+	return tr("t.interfaces") + strings.Join(parts, " + ")
 }
 
 func pluginLoadPathSummary(p *Plugin) string {
 	if p == nil {
-		return "Load path: unknown"
+		return tr("t.load_path_unknown")
 	}
 	switch p.LoaderKind {
 	case pluginKindRML:
-		return "Load path: Native RML interface"
+		return tr("t.load_path_native_rml")
 	case pluginKindTesmio:
-		return "Load path: Tesmio compatibility shim"
+		return tr("t.load_path_tesmio_compatibility")
 	default:
 		if p.HasRMLInterface || p.HasTesmioInterface {
-			return "Load path: Raw LoadLibrary (no complete supported lifecycle)"
+			return tr("t.load_path_raw_loadlibrary")
 		}
-		return "Load path: Raw LoadLibrary"
+		return tr("t.load_path_raw_loadlibrary")
 	}
 }
 
@@ -1005,32 +1005,32 @@ func pluginValidationDetails(p *Plugin) string {
 		return ""
 	}
 	v := p.PEValidation
-	peState := "INVALID"
+	peState := tr("t.invalid")
 	if v.PEReadable {
-		peState = "VALID"
+		peState = tr("t.valid")
 	}
-	dllState := "Unable to determine"
+	dllState := tr("t.unable_to_determine")
 	if v.PEReadable {
 		if v.DeclaredDLL {
-			dllState = "Yes"
+			dllState = tr("t.yes")
 		} else {
-			dllState = "No"
+			dllState = tr("t.no")
 		}
 	}
 	if p.BasicValid {
-		return "Binary Validation: VALID\nPE Image: VALID\nArchitecture: " + v.Architecture + "\nPE Format: " + v.PEFormat + "\nDeclared as DLL: " + dllState
+		return tr("t.binary_validation_valid_npe") + v.Architecture + tr("t.npe_format") + v.PEFormat + tr("t.ndeclared_as_dll") + dllState
 	}
 	var b strings.Builder
-	b.WriteString("Plugin Validation Failed\n")
-	b.WriteString("PE Image: " + peState + "\n")
-	b.WriteString("Architecture: " + v.Architecture + "\n")
-	b.WriteString("PE Format: " + v.PEFormat + "\n")
-	b.WriteString("Declared as DLL: " + dllState)
+	b.WriteString(tr("t.plugin_validation_failed_n"))
+	b.WriteString(tr("t.pe_image") + peState + "\n")
+	b.WriteString(tr("t.architecture") + v.Architecture + "\n")
+	b.WriteString(tr("t.pe_format") + v.PEFormat + "\n")
+	b.WriteString(tr("t.declared_as_dll") + dllState)
 	// Individual admission failures are rendered as prominent banners below the
 	// validation facts. Keeping them out of this paragraph prevents the same
 	// failure from being repeated as ordinary metadata and as a banner.
 	if !v.PEReadable && strings.TrimSpace(v.ParserError) != "" {
-		b.WriteString("\nParser detail: " + v.ParserError)
+		b.WriteString(tr("t.nparser_detail") + v.ParserError)
 	}
 	return b.String()
 }
@@ -1079,14 +1079,14 @@ func drawPluginDetail(c *canvas, x, y, w, h int) {
 	c.card(x, y, w, h)
 	p := c.app.selectedPlugin()
 	if p == nil {
-		c.text("Select a plugin to inspect it.", x+c.s(24), y+c.s(40), w-c.s(48), c.s(90), fonts.Body, palette.TextMuted, dtCenter|dtVCenter|dtWordBreak)
+		c.text(tr("t.select_a_plugin_to"), x+c.s(24), y+c.s(40), w-c.s(48), c.s(90), fonts.Body, palette.TextMuted, dtCenter|dtVCenter|dtWordBreak)
 		return
 	}
-	c.label("Plugin details", x+c.s(20), y+c.s(16), w-c.s(40), palette.TextMuted)
+	c.label(tr("t.plugin_details"), x+c.s(20), y+c.s(16), w-c.s(40), palette.TextMuted)
 	c.text(p.Manifest.Name, x+c.s(20), y+c.s(37), w-c.s(40), c.s(36), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	sourceLine := "Local plugin"
+	sourceLine := tr("t.local_plugin")
 	if p.WorkshopID != "" {
-		sourceLine = "Workshop ID  " + p.WorkshopID
+		sourceLine = tr("t.workshop_id") + p.WorkshopID
 	}
 	c.text(sourceLine, x+c.s(20), y+c.s(72), w-c.s(40), c.s(24), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 
@@ -1097,26 +1097,26 @@ func drawPluginDetail(c *canvas, x, y, w, h int) {
 	if image := c.app.ensurePluginImage(); image != 0 {
 		drawGDIPlusImageContainedNative(c.dc, image, thumbX+c.s(3), thumbY+c.s(3), thumbW-c.s(6), thumbH-c.s(6))
 	} else {
-		c.text("No package preview", thumbX+c.s(8), thumbY, thumbW-c.s(16), thumbH, fonts.Small, palette.TextFaint, dtCenter|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.text(tr("t.no_package_preview"), thumbX+c.s(8), thumbY, thumbW-c.s(16), thumbH, fonts.Small, palette.TextFaint, dtCenter|dtVCenter|dtSingleLine|dtEndEllipsis)
 	}
 
-	pluginState, pluginStateClass := "DISABLED", 3
+	pluginState, pluginStateClass := tr("t.disabled"), 3
 	if !p.BasicValid {
-		pluginState, pluginStateClass = "INVALID", 2
+		pluginState, pluginStateClass = tr("t.invalid"), 2
 	} else if p.Setting.Enabled {
-		pluginState, pluginStateClass = "ENABLED", 0
+		pluginState, pluginStateClass = tr("t.enabled"), 0
 	}
 	metaX := thumbX + thumbW + c.s(14)
 	metaW := maxInt(c.s(82), x+w-metaX-c.s(20))
 	c.pill(pluginState, pluginStateClass, metaX, thumbY+c.s(8), minInt(c.s(104), metaW), c.s(28))
 	c.text(pluginInterfaceSummary(p), metaX, thumbY+c.s(42), metaW, c.s(22), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 	c.text(pluginLoadPathSummary(p), metaX, thumbY+c.s(65), metaW, c.s(22), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	thirdLine := "Binary: " + p.PEValidation.Architecture + " • " + p.PEValidation.PEFormat
+	thirdLine := tr("t.binary") + p.PEValidation.Architecture + " • " + p.PEValidation.PEFormat
 	thirdColor := palette.TextMuted
 	if item := c.app.pluginWorkshopItem(p); item != nil {
 		label := workshopUpdateShortLabel(item)
 		if label != "" {
-			thirdLine = "Update: " + strings.ToUpper(label)
+			thirdLine = tr("t.update") + strings.ToUpper(label)
 			switch item.UpdateState {
 			case "current":
 				thirdColor = palette.Good
@@ -1146,20 +1146,20 @@ func drawPluginDetail(c *canvas, x, y, w, h int) {
 		controlY = descTextY + c.s(42)
 	}
 	descH := maxInt(c.s(36), controlY-descTextY-c.s(10))
-	c.label("Description", x+c.s(20), descLabelY, w-c.s(40), palette.TextFaint)
+	c.label(tr("t.description"), x+c.s(20), descLabelY, w-c.s(40), palette.TextFaint)
 	body := p.Manifest.Description
 	if len(p.Manifest.Dependencies) > 0 {
-		body += "\n\nDependencies: " + strings.Join(p.Manifest.Dependencies, "  •  ")
+		body += tr("t.n_ndependencies") + strings.Join(p.Manifest.Dependencies, "  •  ")
 	}
 	if len(p.Manifest.RequiredSymbols) > 0 {
-		body += "\n\nRequired symbols: " + strings.Join(p.Manifest.RequiredSymbols, "  •  ")
+		body += tr("t.n_nrequired_symbols") + strings.Join(p.Manifest.RequiredSymbols, "  •  ")
 	}
 	// Invalid PE-admission failures have their own high-visibility banners below,
 	// so do not repeat those same strings in the ordinary metadata paragraph.
 	if len(p.Reasons) > 0 && p.BasicValid {
-		body += "\n\nRuntime / metadata notes: " + strings.Join(p.Reasons, "  •  ")
+		body += tr("t.n_nruntime_metadata_notes") + strings.Join(p.Reasons, "  •  ")
 	}
-	body += "\n\n" + pluginValidationDetails(p)
+	body += tr("t.n_n") + pluginValidationDetails(p)
 	bannerW := w - c.s(40)
 	bannerHeights := []int(nil)
 	bannerBlockH := 0
@@ -1185,34 +1185,34 @@ func drawPluginDetail(c *canvas, x, y, w, h int) {
 
 	c.divider(x+c.s(20), controlY, w-c.s(40))
 	controlY += c.s(10)
-	c.text("Callback priority", x+c.s(20), controlY, w-c.s(40), c.s(22), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine)
-	c.text("Lower priorities run earlier within their phase.", x+c.s(20), controlY+c.s(23), w-c.s(170), c.s(19), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("t.callback_priority"), x+c.s(20), controlY, w-c.s(40), c.s(22), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine)
+	c.text(tr("t.lower_priorities_run_earlier"), x+c.s(20), controlY+c.s(23), w-c.s(170), c.s(19), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 	c.compactButton("priority-minus", "− 10", x+w-c.s(170), controlY+c.s(4), c.s(48), c.s(34))
 	c.roundedRect(x+w-c.s(116), controlY+c.s(4), c.s(42), c.s(34), c.s(8), palette.Background, palette.Border)
 	c.text(fmt.Sprintf("%d", p.Setting.Priority), x+w-c.s(116), controlY+c.s(4), c.s(42), c.s(34), fonts.SmallStrong, palette.Text, dtCenter|dtVCenter|dtSingleLine)
 	c.compactButton("priority-plus", "+ 10", x+w-c.s(68), controlY+c.s(4), c.s(48), c.s(34))
 
-	settingsLabel := "Open plugin INI / Settings"
+	settingsLabel := tr("t.open_plugin_ini_settings")
 	settingsAvailable := p.SettingsPath != "" || (p.SettingsCount > 1 && p.SettingsDir != "")
 	if p.SettingsPath == "" {
 		if p.SettingsCount > 1 && p.SettingsDir != "" {
-			settingsLabel = "Open settings folder"
+			settingsLabel = tr("t.open_settings_folder")
 		} else {
-			settingsLabel = "No plugin INI found"
+			settingsLabel = tr("t.no_plugin_ini_found")
 		}
 	}
 	if p.WorkshopID != "" {
 		gap := c.s(8)
 		buttonW := (w - c.s(40) - gap) / 2
 		c.buttonEnabled("plugin-open-settings", settingsLabel, x+c.s(20), buttonY1, w-c.s(40), c.s(40), false, settingsAvailable)
-		c.button("plugin-workshop-open-page", "Open Workshop", x+c.s(20), buttonY2, buttonW, c.s(40), false)
-		c.button("plugin-workshop-open-folder", "Open file location", x+c.s(20)+buttonW+gap, buttonY2, buttonW, c.s(40), false)
+		c.button("plugin-workshop-open-page", tr("t.open_workshop"), x+c.s(20), buttonY2, buttonW, c.s(40), false)
+		c.button("plugin-workshop-open-folder", tr("t.open_file_location"), x+c.s(20)+buttonW+gap, buttonY2, buttonW, c.s(40), false)
 		canAction := !c.app.workshopActionBusy && !c.app.workshopUpdateBusy
 		if item := c.app.workshopItemByID(p.WorkshopID); item != nil && item.Unsubscribed {
 			canAction = false
 		}
-		c.button("plugin-workshop-force-update", "Force Update", x+c.s(20), buttonY3, buttonW, c.s(40), true)
-		c.dangerButton("plugin-workshop-unsubscribe", "Unsubscribe", x+c.s(20)+buttonW+gap, buttonY3, buttonW, c.s(40), canAction)
+		c.button("plugin-workshop-force-update", tr("t.force_update"), x+c.s(20), buttonY3, buttonW, c.s(40), true)
+		c.dangerButton("plugin-workshop-unsubscribe", tr("t.unsubscribe"), x+c.s(20)+buttonW+gap, buttonY3, buttonW, c.s(40), canAction)
 	} else {
 		c.buttonEnabled("plugin-open-settings", settingsLabel, x+c.s(20), buttonY3, w-c.s(40), c.s(40), false, settingsAvailable)
 	}
@@ -1226,9 +1226,9 @@ func drawDevelopmentTable(c *canvas, x, y, w, h int) {
 	statusX := x + w - statusW - c.s(8)
 	idW := c.s(92)
 	idX := statusX - idW - c.s(10)
-	c.text("DEVELOPMENT MOD", x+c.s(18), y, maxInt(c.s(60), idX-x-c.s(28)), headerH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text("PROJECT ID", idX, y, idW, headerH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text("STATUS", statusX, y, statusW, headerH, fonts.Tiny, palette.TextMuted, dtCenter|dtVCenter|dtSingleLine)
+	c.text(tr("t.development_mod"), x+c.s(18), y, maxInt(c.s(60), idX-x-c.s(28)), headerH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("t.project_id"), idX, y, idW, headerH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("t.status"), statusX, y, statusW, headerH, fonts.Tiny, palette.TextMuted, dtCenter|dtVCenter|dtSingleLine)
 
 	rowH := c.s(61)
 	maxRows := maxInt(1, (h-headerH-c.s(6))/rowH)
@@ -1254,14 +1254,14 @@ func drawDevelopmentTable(c *canvas, x, y, w, h int) {
 		}
 		nameW := maxInt(c.s(60), idX-x-c.s(28))
 		c.text(item.Name, x+c.s(18), rowY+c.s(6), nameW, c.s(25), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-		sub := "Local unpublished project"
+		sub := tr("t.local_unpublished_project")
 		subColor := palette.TextFaint
 		if len(item.EmbeddedPluginIDs) > 0 {
-			sub = fmt.Sprintf("Local unpublished project  •  %d embedded DLL(s)", len(item.EmbeddedPluginIDs))
+			sub = fmt.Sprintf(tr("t.local_unpublished_project_d"), len(item.EmbeddedPluginIDs))
 			subColor = palette.AccentBright
 		}
 		if len(item.Issues) > 0 {
-			sub += fmt.Sprintf("  •  %d issue(s)", len(item.Issues))
+			sub += fmt.Sprintf(tr("t.d_issue_s"), len(item.Issues))
 			subColor = palette.Warn
 		}
 		c.text(sub, x+c.s(18), rowY+c.s(31), nameW, c.s(20), fonts.Tiny, subColor, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
@@ -1274,9 +1274,9 @@ func drawDevelopmentTable(c *canvas, x, y, w, h int) {
 	c.app.modListX, c.app.modListY, c.app.modListW, c.app.modListH = x, y+headerH, w, h-headerH
 	drawListScrollbar(c, "development", x+w-c.s(10), y+headerH+c.s(4), c.s(6), h-headerH-c.s(8), len(visible), maxRows, offset)
 	if len(visible) == 0 {
-		msg := "No development mods match the current search/filter."
+		msg := tr("t.no_development_mods_match")
 		if len(c.app.developmentItems) == 0 {
-			msg = "No numeric development project folders were found under media_soviet\\workshop_wip."
+			msg = tr("t.no_numeric_development_project")
 		}
 		c.text(msg, x+c.s(22), y+c.s(70), w-c.s(44), c.s(80), fonts.Body, palette.TextMuted, dtCenter|dtVCenter|dtWordBreak)
 	}
@@ -1286,12 +1286,12 @@ func drawDevelopmentDetail(c *canvas, x, y, w, h int) {
 	c.card(x, y, w, h)
 	item := c.app.selectedDevelopmentItem()
 	if item == nil {
-		c.text("Select a local development project to inspect it.", x+c.s(24), y+c.s(40), w-c.s(48), c.s(90), fonts.Body, palette.TextMuted, dtCenter|dtVCenter|dtWordBreak)
+		c.text(tr("t.select_a_local_development"), x+c.s(24), y+c.s(40), w-c.s(48), c.s(90), fonts.Body, palette.TextMuted, dtCenter|dtVCenter|dtWordBreak)
 		return
 	}
-	c.label("Development mod", x+c.s(20), y+c.s(16), w-c.s(40), palette.TextMuted)
+	c.label(tr("t.development_mod"), x+c.s(20), y+c.s(16), w-c.s(40), palette.TextMuted)
 	c.text(item.Name, x+c.s(20), y+c.s(37), w-c.s(40), c.s(36), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text("Workshop ID  "+item.ID, x+c.s(20), y+c.s(72), w-c.s(40), c.s(24), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("t.workshop_id")+item.ID, x+c.s(20), y+c.s(72), w-c.s(40), c.s(24), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 
 	thumbX, thumbY := x+c.s(20), y+c.s(105)
 	thumbW := detailThumbnailWidth(c, w)
@@ -1300,52 +1300,52 @@ func drawDevelopmentDetail(c *canvas, x, y, w, h int) {
 	if image := c.app.ensureDevelopmentImage(); image != 0 {
 		drawGDIPlusImageContainedNative(c.dc, image, thumbX+c.s(3), thumbY+c.s(3), thumbW-c.s(6), thumbH-c.s(6))
 	} else {
-		c.text("No preview image", thumbX+c.s(8), thumbY, thumbW-c.s(16), thumbH, fonts.Small, palette.TextFaint, dtCenter|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.text(tr("t.no_preview_image"), thumbX+c.s(8), thumbY, thumbW-c.s(16), thumbH, fonts.Small, palette.TextFaint, dtCenter|dtVCenter|dtSingleLine|dtEndEllipsis)
 	}
-	state, stateClass := "DISABLED", 3
+	state, stateClass := tr("t.disabled"), 3
 	if item.Enabled {
-		state, stateClass = "ENABLED", 0
+		state, stateClass = tr("t.enabled"), 0
 	}
 	metaX := thumbX + thumbW + c.s(14)
 	metaW := maxInt(c.s(82), x+w-metaX-c.s(20))
 	c.pill(state, stateClass, metaX, thumbY+c.s(8), minInt(c.s(104), metaW), c.s(28))
-	packageType := "Development Workshop project"
+	packageType := tr("t.development_workshop_project")
 	if len(item.EmbeddedPluginIDs) > 0 {
-		packageType = fmt.Sprintf("Hybrid package • %d embedded DLL(s)", len(item.EmbeddedPluginIDs))
+		packageType = fmt.Sprintf(tr("t.hybrid_package_d_embedded"), len(item.EmbeddedPluginIDs))
 	}
 	c.text(packageType, metaX, thumbY+c.s(42), metaW, c.s(40), fonts.Tiny, palette.TextMuted, dtLeft|dtWordBreak)
 	if len(item.Issues) > 0 {
-		c.text(fmt.Sprintf("Needs attention • %d project check(s)", len(item.Issues)), metaX, thumbY+c.s(86), metaW, c.s(20), fonts.Tiny, palette.Warn, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.text(fmt.Sprintf(tr("t.needs_attention_d_project"), len(item.Issues)), metaX, thumbY+c.s(86), metaW, c.s(20), fonts.Tiny, palette.Warn, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 	}
 
 	rowY := thumbY + thumbH + c.s(15)
-	c.label("Embedded DLL payloads", x+c.s(20), rowY, w-c.s(40), palette.TextFaint)
+	c.label(tr("t.embedded_dll_payloads"), x+c.s(20), rowY, w-c.s(40), palette.TextFaint)
 	rowY += c.s(20)
-	payloads := "None"
+	payloads := tr("t.none")
 	if len(item.EmbeddedPluginIDs) > 0 {
 		payloads = strings.Join(item.EmbeddedPluginIDs, "  •  ")
 	}
 	payloadH := minInt(c.s(42), maxInt(c.s(20), c.textHeight(payloads, w-c.s(40), fonts.Small)))
 	c.text(payloads, x+c.s(20), rowY, w-c.s(40), payloadH, fonts.Small, palette.TextMuted, dtLeft|dtWordBreak)
 	rowY += payloadH + c.s(10)
-	c.label("Description", x+c.s(20), rowY, w-c.s(40), palette.TextFaint)
+	c.label(tr("t.description"), x+c.s(20), rowY, w-c.s(40), palette.TextFaint)
 	rowY += c.s(20)
 
 	buttonY := y + h - c.s(60)
 	descH := maxInt(c.s(45), buttonY-rowY-c.s(12))
 	description := item.Description
 	if len(item.Issues) > 0 {
-		description += "\n\nProject checks:\n• " + strings.Join(item.Issues, "\n• ")
+		description += tr("t.n_nproject_checks_n") + strings.Join(item.Issues, "\n• ")
 	}
 	drawScrollableDescription(c, 2, description, x+c.s(20), rowY, w-c.s(40), descH, fonts.Small, palette.TextMuted)
 
 	gap := c.s(8)
 	buttonW := (w - c.s(40) - gap) / 2
-	c.button("development-open-folder", "Open project folder", x+c.s(20), buttonY, buttonW, c.s(40), false)
-	configLabel := "Open workshopconfig.ini"
+	c.button("development-open-folder", tr("t.open_project_folder"), x+c.s(20), buttonY, buttonW, c.s(40), false)
+	configLabel := tr("t.open_workshopconfig_ini")
 	configAvailable := item.ConfigPath != ""
 	if !configAvailable {
-		configLabel = "Config not found"
+		configLabel = tr("t.config_not_found")
 	}
 	c.buttonEnabled("development-open-config", configLabel, x+c.s(20)+buttonW+gap, buttonY, buttonW, c.s(40), false, configAvailable)
 }
@@ -1358,9 +1358,9 @@ func drawWorkshopTable(c *canvas, x, y, w, h int) {
 	statusX := x + w - statusW - c.s(8)
 	idW := c.s(92)
 	idX := statusX - idW - c.s(10)
-	nameLabel := workshopSortLabel("WORKSHOP MOD", "name", c.app)
-	idLabel := workshopSortLabel("ITEM ID", "id", c.app)
-	statusLabel := workshopSortLabel("STATUS", "on", c.app)
+	nameLabel := workshopSortLabel(tr("t.workshop_mod"), "name", c.app)
+	idLabel := workshopSortLabel(tr("t.item_id"), "id", c.app)
+	statusLabel := workshopSortLabel(tr("t.status"), "on", c.app)
 	nameColor, idColor, statusColor := palette.TextMuted, palette.TextMuted, palette.TextMuted
 	if c.app.workshopSort == "name" {
 		nameColor = palette.AccentBright
@@ -1402,34 +1402,34 @@ func drawWorkshopTable(c *canvas, x, y, w, h int) {
 		}
 		nameW := maxInt(c.s(60), idX-x-c.s(28))
 		c.text(item.Name, x+c.s(18), rowY+c.s(6), nameW, c.s(25), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-		sub := "Steam Workshop"
+		sub := tr("t.steam_workshop")
 		subColor := palette.TextFaint
 		if item.Unsubscribed {
-			sub = "Unsubscribed"
+			sub = tr("t.unsubscribed")
 			subColor = palette.Bad
 		} else if item.UpdateState == "stale" {
-			sub = "Potentially stale — " + item.UpdateReason
+			sub = tr("t.potentially_stale") + item.UpdateReason
 			subColor = palette.Warn
 		} else if item.UpdateState == "update" {
-			sub = "Update available — " + item.UpdateReason
+			sub = tr("t.update_available") + item.UpdateReason
 			subColor = palette.Warn
 		} else if item.UpdateState == "downloading" {
-			sub = "Steam update downloading / queued"
+			sub = tr("t.steam_update_downloading_queued")
 			subColor = palette.AccentBright
 		} else if item.UpdateState == "missing" {
-			sub = "Installed copy missing"
+			sub = tr("t.installed_copy_missing")
 			subColor = palette.Bad
 		} else if item.UpdateState == "current" {
-			sub = "Steam Workshop — up to date"
+			sub = tr("t.steam_workshop_up_to")
 			subColor = palette.Good
 		} else if item.Unsupported {
-			sub = "Needs attention"
+			sub = tr("t.needs_attention")
 			if len(item.UnsupportedReasons) > 0 {
 				sub += " — " + item.UnsupportedReasons[0]
 			}
 			subColor = palette.Bad
 		} else if item.RemoteSupportState == "ok" {
-			sub = "Steam Workshop — page verified"
+			sub = tr("t.steam_workshop_page_verified")
 		}
 		c.text(sub, x+c.s(18), rowY+c.s(31), nameW, c.s(20), fonts.Tiny, subColor, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		c.text(item.ID, idX, rowY, idW, rowH, fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
@@ -1441,9 +1441,9 @@ func drawWorkshopTable(c *canvas, x, y, w, h int) {
 	c.app.modListX, c.app.modListY, c.app.modListW, c.app.modListH = x, y+headerH, w, h-headerH
 	drawListScrollbar(c, "workshop", x+w-c.s(10), y+headerH+c.s(4), c.s(6), h-headerH-c.s(8), len(visible), maxRows, offset)
 	if len(visible) == 0 {
-		msg := "No Workshop mods match the current search/filter."
+		msg := tr("t.no_workshop_mods_match")
 		if len(c.app.workshopItems) == 0 {
-			msg = "No installed WRSR Workshop content was found in this Steam library."
+			msg = tr("t.no_installed_wrsr_workshop")
 		}
 		c.text(msg, x+c.s(22), y+c.s(70), w-c.s(44), c.s(70), fonts.Body, palette.TextMuted, dtCenter|dtVCenter|dtWordBreak)
 	}
@@ -1453,16 +1453,16 @@ func drawWorkshopDetail(c *canvas, x, y, w, h int) {
 	c.card(x, y, w, h)
 	item := c.app.selectedWorkshopItem()
 	if item == nil {
-		c.text("Select an installed Workshop mod to inspect its local metadata.", x+c.s(24), y+c.s(40), w-c.s(48), c.s(90), fonts.Body, palette.TextMuted, dtCenter|dtVCenter|dtWordBreak)
+		c.text(tr("t.select_an_installed_workshop"), x+c.s(24), y+c.s(40), w-c.s(48), c.s(90), fonts.Body, palette.TextMuted, dtCenter|dtVCenter|dtWordBreak)
 		return
 	}
-	c.label("Workshop details", x+c.s(20), y+c.s(16), w-c.s(40), palette.TextMuted)
+	c.label(tr("t.workshop_details"), x+c.s(20), y+c.s(16), w-c.s(40), palette.TextMuted)
 	c.text(item.Name, x+c.s(20), y+c.s(37), w-c.s(40), c.s(36), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-	c.text("Workshop ID  "+item.ID, x+c.s(20), y+c.s(72), w-c.s(40), c.s(24), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("t.workshop_id")+item.ID, x+c.s(20), y+c.s(72), w-c.s(40), c.s(24), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 
 	thumbX, thumbY := x+c.s(20), y+c.s(105)
 	if item.Unsupported {
-		reason := "Needs attention"
+		reason := tr("t.needs_attention")
 		if len(item.UnsupportedReasons) > 0 {
 			reason += ": " + strings.Join(item.UnsupportedReasons, "; ")
 		}
@@ -1476,20 +1476,20 @@ func drawWorkshopDetail(c *canvas, x, y, w, h int) {
 	if image != 0 {
 		drawGDIPlusImageContainedNative(c.dc, image, thumbX+c.s(3), thumbY+c.s(3), thumbW-c.s(6), thumbH-c.s(6))
 	} else {
-		c.text("No local thumbnail", thumbX+c.s(8), thumbY, thumbW-c.s(16), thumbH, fonts.Small, palette.TextFaint, dtCenter|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.text(tr("t.no_local_thumbnail"), thumbX+c.s(8), thumbY, thumbW-c.s(16), thumbH, fonts.Small, palette.TextFaint, dtCenter|dtVCenter|dtSingleLine|dtEndEllipsis)
 	}
-	state := "DISABLED"
+	state := tr("t.disabled")
 	class := 3
 	if item.Enabled {
-		state, class = "ENABLED", 0
+		state, class = tr("t.enabled"), 0
 	}
 	if item.Unsubscribed {
-		state, class = "UNSUBSCRIBED", 2
+		state, class = tr("t.unsubscribed"), 2
 	}
 	c.pill(state, class, thumbX+thumbW+c.s(14), thumbY+c.s(8), c.s(104), c.s(28))
-	workshopStateDetail := "Playlist inclusion"
+	workshopStateDetail := tr("t.playlist_inclusion")
 	if len(item.EmbeddedPluginIDs) > 0 {
-		workshopStateDetail = fmt.Sprintf("Hybrid package • %d linked plugin(s)\nEnable state is coupled", len(item.EmbeddedPluginIDs))
+		workshopStateDetail = fmt.Sprintf(tr("t.hybrid_package_d_linked"), len(item.EmbeddedPluginIDs))
 	}
 	c.text(workshopStateDetail, thumbX+thumbW+c.s(14), thumbY+c.s(42), maxInt(c.s(80), w-thumbW-c.s(54)), c.s(48), fonts.Tiny, palette.TextMuted, dtLeft|dtWordBreak)
 
@@ -1506,15 +1506,15 @@ func drawWorkshopDetail(c *canvas, x, y, w, h int) {
 		if item.UpdateState == "missing" || item.UpdateState == "unavailable" {
 			updateColor = palette.Bad
 		}
-		c.label("Update status", x+c.s(20), descY, w-c.s(40), palette.TextFaint)
+		c.label(tr("t.update_status"), x+c.s(20), descY, w-c.s(40), palette.TextFaint)
 		descY += c.s(19)
 		c.text(updateLabel+"  •  "+item.UpdateReason, x+c.s(20), descY, w-c.s(40), c.s(30), fonts.Tiny, updateColor, dtLeft|dtWordBreak)
 		descY += c.s(31)
-		times := "Installed: " + formatWorkshopUpdateTime(item.InstalledUpdatedUnix) + "   •   Workshop: " + formatWorkshopUpdateTime(item.RemoteUpdatedUnix)
+		times := tr("t.installed") + formatWorkshopUpdateTime(item.InstalledUpdatedUnix) + tr("t.workshop") + formatWorkshopUpdateTime(item.RemoteUpdatedUnix)
 		c.text(times, x+c.s(20), descY, w-c.s(40), c.s(20), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		descY += c.s(25)
 	}
-	c.label("Description", x+c.s(20), descY, w-c.s(40), palette.TextFaint)
+	c.label(tr("t.description"), x+c.s(20), descY, w-c.s(40), palette.TextFaint)
 	descY += c.s(20)
 	buttonY2 := y + h - c.s(62)
 	buttonY1 := buttonY2 - c.s(48)
@@ -1522,48 +1522,48 @@ func drawWorkshopDetail(c *canvas, x, y, w, h int) {
 	drawScrollableDescription(c, 1, item.Description, x+c.s(20), descY, w-c.s(40), descH, fonts.Small, palette.TextMuted)
 	gap := c.s(8)
 	buttonW := (w - c.s(40) - gap) / 2
-	c.button("workshop-open-page", "Open Workshop", x+c.s(20), buttonY1, buttonW, c.s(40), false)
-	c.button("workshop-open-folder", "Open file location", x+c.s(20)+buttonW+gap, buttonY1, buttonW, c.s(40), false)
-	c.button("workshop-force-update", "Force Update", x+c.s(20), buttonY2, buttonW, c.s(40), true)
+	c.button("workshop-open-page", tr("t.open_workshop"), x+c.s(20), buttonY1, buttonW, c.s(40), false)
+	c.button("workshop-open-folder", tr("t.open_file_location"), x+c.s(20)+buttonW+gap, buttonY1, buttonW, c.s(40), false)
+	c.button("workshop-force-update", tr("t.force_update"), x+c.s(20), buttonY2, buttonW, c.s(40), true)
 	canUnsubscribe := !c.app.workshopActionBusy && !c.app.workshopUpdateBusy && !item.Unsubscribed
-	c.dangerButton("workshop-unsubscribe", "Unsubscribe", x+c.s(20)+buttonW+gap, buttonY2, buttonW, c.s(40), canUnsubscribe)
+	c.dangerButton("workshop-unsubscribe", tr("t.unsubscribe"), x+c.s(20)+buttonW+gap, buttonY2, buttonW, c.s(40), canUnsubscribe)
 }
 
 func drawDiagnosticsPage(c *canvas, x, y, w, h int) {
-	cursor := c.sectionTitle("SUPPORT & DIAGNOSTICS", "Diagnostics", "", x, y, w)
+	cursor := c.sectionTitle(tr("t.support_diagnostics"), "Diagnostics", "", x, y, w)
 	gap := c.s(14)
 	topH := c.s(104)
 	cardW := (w - gap*2) / 3
-	state, detail, cls := "No report", "No WRSR session recorded yet", 1
+	state, detail, cls := tr("t.no_report"), tr("t.no_wrsr_session_recorded"), 1
 	if c.app.report != nil {
 		if c.app.report.BootstrapStatus == 0 {
-			state, detail, cls = "OK", "Last RML bootstrap completed", 0
+			state, detail, cls = tr("t.ok"), tr("t.last_rml_bootstrap_completed"), 0
 		} else {
-			state, detail, cls = fmt.Sprintf("0x%X", c.app.report.BootstrapStatus), "Last bootstrap reported an error", 2
+			state, detail, cls = fmt.Sprintf(tr("t.0x_x"), c.app.report.BootstrapStatus), tr("t.last_bootstrap_reported_an"), 2
 		}
 	}
-	c.metricCard("Last session", state, detail, x, cursor, cardW, topH, cls)
-	detailed := "Off"
+	c.metricCard(tr("t.last_session"), state, detail, x, cursor, cardW, topH, cls)
+	detailed := tr("t.off")
 	if c.app.cfg.VerboseDiagnostics {
-		detailed = "On"
+		detailed = tr("t.on")
 	}
-	c.metricCard("Detailed logging", detailed, "Full troubleshooting trace is optional", x+cardW+gap, cursor, cardW, topH, map[bool]int{true: 1, false: 0}[c.app.cfg.VerboseDiagnostics])
-	archives := "Manual only"
+	c.metricCard(tr("t.detailed_logging"), detailed, tr("t.full_troubleshooting_trace_is"), x+cardW+gap, cursor, cardW, topH, map[bool]int{true: 1, false: 0}[c.app.cfg.VerboseDiagnostics])
+	archives := tr("t.manual_only")
 	if c.app.cfg.AutoCrashArchives {
-		archives = "Automatic"
+		archives = tr("t.automatic")
 	}
-	c.metricCard("Crash archives", archives, "Timestamped ZIP on abnormal launch/exit", x+(cardW+gap)*2, cursor, cardW, topH, 0)
+	c.metricCard(tr("t.crash_archives"), archives, tr("t.timestamped_zip_on_abnormal"), x+(cardW+gap)*2, cursor, cardW, topH, 0)
 	cursor += topH + c.s(14)
 
 	buttons := []struct {
 		ID    string
 		Label string
 	}{
-		{"refresh", "Refresh"},
-		{"open-log", "Open session log"},
-		{"open-verbose-log", "Open detailed log"},
-		{"create-support-archive", "Create support ZIP"},
-		{"open-crash-folder", "Crash archives"},
+		{"refresh", tr("t.refresh")},
+		{"open-log", tr("t.open_session_log")},
+		{"open-verbose-log", tr("t.open_detailed_log")},
+		{"create-support-archive", tr("t.create_support_zip")},
+		{"open-crash-folder", tr("t.crash_archives")},
 	}
 	buttonGap := c.s(7)
 	innerW := w - c.s(14)
@@ -1600,7 +1600,7 @@ func drawDiagnosticsPage(c *canvas, x, y, w, h int) {
 	logH := h - (cursor - y) - c.s(10)
 	c.roundedRect(x, cursor, w, logH, c.s(12), rgb(7, 10, 14), palette.Border)
 	c.fillRect(x+c.s(1), cursor+c.s(1), c.s(5), logH-c.s(2), palette.Accent)
-	c.label("Latest session — high-level tail", x+c.s(22), cursor+c.s(14), w-c.s(44), palette.TextFaint)
+	c.label(tr("t.latest_session_high_level"), x+c.s(22), cursor+c.s(14), w-c.s(44), palette.TextFaint)
 	log := c.app.logTail
 	if len(log) > 16000 {
 		log = log[len(log)-16000:]

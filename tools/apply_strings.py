@@ -124,11 +124,16 @@ FUNCTION_SCOPES = {
 }
 
 
-def slug_key(literal: str) -> str:
+def slug_key(literal: str, mapping=None) -> str:
     words = re.findall(r"[A-Za-z0-9]+", literal)
     base = "_".join(words[:4]).lower()
     base = re.sub(r"[^a-z0-9_]", "", base)[:36].strip("_") or "text"
-    return "t." + base
+    key = "t." + base
+    idx = 2
+    while mapping is not None and key in mapping:
+        key = f"t.{base}_{idx}"
+        idx += 1
+    return key
 
 
 def skip_literal(literal: str) -> bool:
@@ -186,10 +191,27 @@ def replace_literals(src: str, mapping: dict):
         literal = match.group(1)
         if skip_literal(literal):
             continue
+        if literal in mapping:
+            replacements.append((match.start(), match.end(), literal))
+            continue
+        in_comment = "//" in src[src.rfind("\n", 0, match.start()) + 1:match.start()]
+        if in_comment:
+            continue
+        key = FIXED.get(literal)
+        if key is None:
+            key = slug_key(literal, mapping)
+        if key in mapping and mapping[key] != literal:
+            base_word = re.sub(r"[^a-z0-9_]", "", "_".join(re.findall(r"[A-Za-z0-9]+", literal)[:4]).lower())[:36]
+            suffix = 2
+            key = f"t.{base_word}_{suffix}"
+            while key in mapping and mapping[key] != literal:
+                suffix += 1
+                key = f"t.{base_word}_{suffix}"
+        mapping[literal] = key
         replacements.append((match.start(), match.end(), literal))
     out = src
     for start, end, literal in reversed(replacements):
-        key = mapping.setdefault(literal, FIXED.get(literal) or slug_key(literal))
+        key = mapping[literal]
         out = out[:start] + f'tr("{key}")' + out[end:]
     return out, mapping
 
@@ -269,6 +291,21 @@ TASKS = {
             "Source/launcher/app_windows.go",
             "Source/launcher/main_windows.go",
         ],
+    },
+    "list_ui": {
+        "files": [
+            "Source/launcher/mod_list_windows.go",
+            "Source/launcher/ui_pages_windows.go",
+        ],
+        "scopes": {
+            "Source/launcher/ui_pages_windows.go": [
+                "drawModSearchBox", "drawPluginsPage", "drawPluginTable",
+                "pluginInterfaceSummary", "pluginLoadPathSummary",
+                "pluginValidationDetails", "drawPluginValidationBanners",
+                "drawPluginDetail", "drawDevelopmentTable", "drawDevelopmentDetail",
+                "drawWorkshopTable", "drawWorkshopDetail", "drawDiagnosticsPage",
+            ],
+        },
     },
 }
 

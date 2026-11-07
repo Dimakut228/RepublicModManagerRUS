@@ -115,24 +115,24 @@ func workshopUpdateShortLabel(item *WorkshopItem) string {
 	}
 	switch item.UpdateState {
 	case "current":
-		return "up to date"
+		return tr("t.up_to_date")
 	case "update":
-		return "update available"
+		return tr("t.update_available")
 	case "stale":
-		return "potentially stale"
+		return tr("t.potentially_stale")
 	case "downloading":
-		return "update downloading"
+		return tr("t.update_downloading")
 	case "missing":
-		return "installed copy missing"
+		return tr("t.installed_copy_missing")
 	case "unavailable":
-		return "Workshop unavailable"
+		return tr("t.workshop_unavailable")
 	case "unknown":
-		return "update status unknown"
+		return tr("t.update_status_unknown")
 	}
 	if item.Unsupported {
-		return "needs attention"
+		return tr("t.needs_attention")
 	}
-	return "not yet scanned"
+	return tr("t.not_yet_scanned")
 }
 
 func (a *application) visiblePluginIndices() []int {
@@ -362,13 +362,13 @@ func (a *application) requestSelectedModUnsubscribe() {
 		return
 	}
 	if a.modView == 2 {
-		a.status = "Development mods are local projects; RML will not delete them"
+		a.status = tr("t.development_mods_are_local")
 		return
 	}
 	if p := a.selectedPlugin(); p != nil && validWorkshopID(p.WorkshopID) {
 		a.requestWorkshopUnsubscribeByID(p.WorkshopID, p.Manifest.Name)
 	} else {
-		a.status = "Selected plugin is not supplied by a Steam Workshop subscription"
+		a.status = tr("t.selected_plugin_is_not")
 	}
 }
 
