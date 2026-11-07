@@ -1,1 +1,7 @@
 .superpowers/
+
+Source/launcher/launcher.exe
+__pycache__/
+Source/dist/
+Source/build/
+
