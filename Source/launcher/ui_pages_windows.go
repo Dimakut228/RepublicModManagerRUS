@@ -13,6 +13,7 @@ var navItems = []struct{ LabelKey, HintKey string }{
 	{LabelKey: "nav.dashboard", HintKey: "nav.dashboard.hint"},
 	{LabelKey: "nav.mods", HintKey: "nav.mods.hint"},
 	{LabelKey: "nav.diagnostics", HintKey: "nav.diagnostics.hint"},
+	{LabelKey: "nav.catalog", HintKey: "nav.catalog.hint"},
 }
 
 func renderApplication(app *application, dc uintptr, width, height int) {
@@ -39,6 +40,8 @@ func renderApplication(app *application, dc uintptr, width, height int) {
 		drawPluginsPage(c, contentX, contentY, contentW, contentH)
 	case 2:
 		drawDiagnosticsPage(c, contentX, contentY, contentW, contentH)
+	case 3:
+		drawCatalogPage(c, contentX, contentY, contentW, contentH)
 	default:
 		drawDashboardPage(c, contentX, contentY, contentW, contentH)
 	}
@@ -693,12 +696,16 @@ func drawScrollableDescription(c *canvas, view int, text string, x, y, w, h int,
 		offset = c.app.workshopDetailScroll
 	} else if view == 2 {
 		offset = c.app.developmentDetailScroll
+	} else if view == 3 {
+		offset = c.app.catalogDetailScroll
 	}
 	offset = clampPixelScroll(offset, contentH, h)
 	if view == 1 {
 		c.app.workshopDetailScroll = offset
 	} else if view == 2 {
 		c.app.developmentDetailScroll = offset
+	} else if view == 3 {
+		c.app.catalogDetailScroll = offset
 	} else {
 		c.app.pluginDetailScroll = offset
 	}

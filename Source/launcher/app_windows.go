@@ -145,6 +145,25 @@ type application struct {
 	playlistDeleteModal bool
 	playlistDeleteName  string
 	settingsModal       bool
+
+	catalogHelpScroll    int
+	catalogSearch        string
+	catalogSearchFocus   bool
+	catalogIDs           []string
+	catalogItems         map[string]catalogItem
+	catalogTotal         int
+	catalogPage          int
+	catalogSel           int            // index into catalogIDs
+	catalogTags          []string       // selected required tags
+	catalogBusy          bool
+	catalogFetchGen      uint32
+	catalogDetailScroll  int
+	catalogListX         int
+	catalogListY         int
+	catalogListW         int
+	catalogListH         int
+	catalogOriginalText  string
+	catalogSelectedID    string
 	playlistDropX       int
 	playlistDropY       int
 	playlistDropW       int
@@ -1028,14 +1047,107 @@ func (a *application) handleAction(id string) {
 	if strings.HasPrefix(id, "nav:") {
 		var page int
 		_, _ = fmt.Sscanf(id, "nav:%d", &page)
+		wasCatalog := a.page == 3
 		a.page = page
+		a.settingsModal = false
 		a.playlistDropdown = false
 		a.status = tr("status.ready")
 		invalidateWindow(a.hwnd)
+		if page == 3 && !wasCatalog && len(a.catalogIDs) == 0 {
+			a.startCatalogFetch()
+		}
 		return
 	}
-	if strings.HasPrefix(id, "plugin-row:") {
+	if strings.HasPrefix(id, "catalog-row:") {
 		var index int
+		_, _ = fmt.Sscanf(id, "catalog-row:%d", &index)
+		a.selectCatalogRow(index)
+		return
+	}
+	if strings.HasPrefix(id, "catalog-tag:") {
+		tag := catalogChipDecoded(strings.TrimPrefix(id, "catalog-tag:"))
+		found := false
+		for i, sel := range a.catalogTags {
+			if sel == tag {
+				a.catalogTags = append(a.catalogTags[:i], a.catalogTags[i+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			a.catalogTags = append(a.catalogTags, tag)
+		}
+		a.catalogPage = 1
+		a.startCatalogFetch()
+		return
+	}
+	switch id {
+	case "catalog-prev":
+		if a.catalogPage > 1 {
+			a.catalogPage--
+			a.startCatalogFetch()
+		} else {
+			a.status = tr("catalog.page.first")
+		}
+	case "catalog-next":
+		if a.catalogPage < catalogPagesTotal(a.catalogTotal) {
+			a.catalogPage++
+			a.startCatalogFetch()
+		} else {
+			a.status = tr("catalog.page.last")
+		}
+	case "catalog-reset":
+		a.catalogSearch = ""
+		a.catalogTags = nil
+		a.catalogPage = 1
+		a.cfg.CatalogSort = ""
+		a.cfg.CatalogPeriod = ""
+		a.cfg.CatalogShowIncompatible = false
+		_ = saveConfig(a.configPath, a.cfg)
+		a.startCatalogFetch()
+	case "catalog-sort":
+		switch a.cfg.CatalogSort {
+		case "", catalogSortTrend:
+			a.cfg.CatalogSort = catalogSortRecent
+		case catalogSortRecent:
+			a.cfg.CatalogSort = catalogSortTopRated
+		default:
+			a.cfg.CatalogSort = catalogSortTrend
+		}
+		_ = saveConfig(a.configPath, a.cfg)
+		a.catalogPage = 1
+		a.startCatalogFetch()
+	case "catalog-period":
+		idx := 0
+		for i, value := range catalogPeriodChoices {
+			if value == a.cfg.CatalogPeriod {
+				idx = i
+				break
+			}
+		}
+		a.cfg.CatalogPeriod = catalogPeriodChoices[(idx+1)%len(catalogPeriodChoices)]
+		_ = saveConfig(a.configPath, a.cfg)
+		a.catalogPage = 1
+		a.startCatalogFetch()
+	case "catalog-show-incompatible":
+		a.cfg.CatalogShowIncompatible = !a.cfg.CatalogShowIncompatible
+		_ = saveConfig(a.configPath, a.cfg)
+		a.catalogPage = 1
+		a.startCatalogFetch()
+	case "catalog-search":
+		a.catalogSearchFocus = true
+		a.status = tr("catalog.search.hint")
+	case "catalog-search-clear":
+		a.catalogSearch = ""
+		a.catalogSearchFocus = true
+	case "catalog-subscribe":
+		a.subscribeCatalogSelection()
+	case "catalog-unsubscribe":
+		a.unsubscribeCatalogSelection()
+	case "catalog-open-page":
+		a.openCatalogWorkshopPage()
+	}
+	if strings.HasPrefix(id, "plugin-row:") {		var index int
 		_, _ = fmt.Sscanf(id, "plugin-row:%d", &index)
 		if index >= 0 && index < len(a.plugins) {
 			if a.selected != index {
@@ -1193,6 +1305,9 @@ func (a *application) handleAction(id string) {
 		a.settingsModal = true
 		a.status = tr("settings.open.hint")
 	case "settings-close":
+		a.settingsModal = false
+		a.status = tr("t.settings_closed")
+	case "settings-apply":
 		a.settingsModal = false
 		a.status = tr("t.settings_closed")
 	case "settings-language-auto":

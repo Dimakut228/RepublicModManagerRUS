@@ -170,6 +170,18 @@ func windowProc(hwnd uintptr, message uint32, wparam, lparam uintptr) uintptr {
 				return 0
 			}
 		}
+		if app != nil && app.page == 3 && !app.settingsModal {
+			switch wparam {
+			case vkUp:
+				app.scrollActiveCatalogDetail(1)
+				invalidateWindow(hwnd)
+				return 0
+			case vkDown:
+				app.scrollActiveCatalogDetail(-1)
+				invalidateWindow(hwnd)
+				return 0
+			}
+		}
 	case wmChar:
 		if app != nil && app.playlistModal {
 			app.playlistKey(rune(wparam))
@@ -177,6 +189,11 @@ func windowProc(hwnd uintptr, message uint32, wparam, lparam uintptr) uintptr {
 		}
 		if app != nil && app.modSearchFocus && app.page == 1 && !app.workshopUnsubscribeModal && !app.workshopForceUpdateModal {
 			app.editModSearch(rune(wparam))
+			invalidateWindow(hwnd)
+			return 0
+		}
+		if app != nil && app.catalogSearchFocus && app.page == 3 && !app.settingsModal {
+			app.editCatalogSearch(rune(wparam))
 			invalidateWindow(hwnd)
 			return 0
 		}
