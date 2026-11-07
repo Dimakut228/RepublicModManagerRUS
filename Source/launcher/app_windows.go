@@ -164,6 +164,12 @@ type application struct {
 	catalogListH         int
 	catalogOriginalText  string
 	catalogSelectedID    string
+	translateMu          sync.Mutex
+	translateSource      string // normalised source currently handled
+	translateState       string // "", busy, done, error
+	translateResult      string
+	translateError       string
+	catalogShowOriginal  bool
 	playlistDropX       int
 	playlistDropY       int
 	playlistDropW       int
@@ -1082,8 +1088,19 @@ func (a *application) handleAction(id string) {
 		return
 	}
 	switch id {
-	case "catalog-prev":
-		if a.catalogPage > 1 {
+	case "catalog-show-original":
+		a.catalogShowOriginal = true
+	case "catalog-show-translated":
+		a.catalogShowOriginal = false
+	case "catalog-refresh-translate":
+		if item, ok := a.selectedCatalogItem(); ok {
+			a.restartTranslate(item.Description)
+		}
+	case "catalog-translate-notice-ok":
+		a.cfg.TranslationNoticeShown = true
+		_ = saveConfig(a.configPath, a.cfg)
+		a.status = tr("catalog.translate.notice_ack")
+	case "catalog-prev":		if a.catalogPage > 1 {
 			a.catalogPage--
 			a.startCatalogFetch()
 		} else {

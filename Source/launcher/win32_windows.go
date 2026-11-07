@@ -45,8 +45,8 @@ const (
 	wmRMLWorkshopUpdateDone      = wmApp + 45
 	wmRMLWorkshopForceUpdateDone = wmApp + 46
 	wmRMLCatalogDone             = wmApp + 47
-	wmRMLCatalogTranslateDone    = wmApp + 48
 	wmRMLTransNotify             = wmApp + 49
+	wmRMLTranslateDone           = wmApp + 50
 
 	tmeLeave = 0x00000002
 

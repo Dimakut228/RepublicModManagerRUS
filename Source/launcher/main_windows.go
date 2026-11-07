@@ -374,6 +374,11 @@ func windowProc(hwnd uintptr, message uint32, wparam, lparam uintptr) uintptr {
 			app.finishWorkshopForceUpdate()
 		}
 		return 0
+	case wmRMLTranslateDone:
+		if app != nil {
+			invalidateWindow(hwnd)
+		}
+		return 0
 	case wmClose:
 		procDestroyWindow.Call(hwnd)
 		return 0

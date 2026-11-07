@@ -267,6 +267,11 @@ func parseGoogleTranslateBody(body []byte) (string, error) {
 	return out.String(), nil
 }
 
+func translationDrop(knowledgeRoot string, source string) {
+	path := filepath.Join(translationCachePath(knowledgeRoot), sourceHash(source)+".json")
+	_ = os.Remove(path)
+}
+
 // translationGet/Put store translations keyed by the normalised source hash.
 func translationGet(t *translator, source string) (string, bool) {
 	dir := translationCachePath(t.knowledgeRoot)

@@ -215,6 +215,65 @@ func catalogCatalogTitle(item catalogItem) string {
 	return title
 }
 
+func (a *application) ensureTranslated(desc string) (string, string, bool) {
+	// returns (result, state, available) ; available=false if feature disabled
+	if !a.cfg.AutoTranslate || currentLocaleCode() != "ru" {
+		return "", "", false
+	}
+	if desc == "" {
+		return "", "idle", true
+	}
+	if sourceLooksRussian(desc) {
+		return "", "idle", true
+	}
+	a.translateMu.Lock()
+	defer a.translateMu.Unlock()
+	if a.translateSource == desc && (a.translateState == "done" || a.translateState == "busy" || a.translateState == "error") {
+		return a.translateResult, a.translateState, true
+	}
+	a.translateSource = desc
+	translator := defaultTranslator(a.knowledgeRoot)
+	if cached, ok := translationGet(translator, desc); ok {
+		a.translateResult = cached
+		a.translateState = "done"
+		a.translateError = ""
+		return cached, "done", true
+	}
+	a.translateResult = ""
+	a.translateState = "busy"
+	a.translateError = ""
+	go func() {
+		text, err := translator.translate(desc)
+		a.translateMu.Lock()
+		a.translateSource = desc
+		a.translateResult = text
+		if err != nil {
+			a.translateState = "error"
+			a.translateError = err.Error()
+		} else {
+			a.translateState = "done"
+			a.translateError = ""
+		}
+		a.translateMu.Unlock()
+		invalidateWindow(a.hwnd)
+		postAppMessage(a.hwnd, wmRMLTranslateDone, 0, 0)
+	}()
+	return "", "busy", true
+}
+
+func (a *application) restartTranslate(desc string) {
+	if desc == "" {
+		return
+	}
+	translator := defaultTranslator(a.knowledgeRoot)
+	translationDrop(translator.knowledgeRoot, desc)
+	a.translateSource = ""
+	a.translateState = ""
+	a.translateResult = ""
+	a.translateError = ""
+	a.ensureTranslated(desc)
+}
+
 func (a *application) editCatalogSearch(r rune) {
 	const backspace = 8
 	const enter = 13
@@ -297,6 +356,15 @@ func catalogChipDecoded(tag string) string {
 func drawCatalogPage(c *canvas, x, y, w, h int) {
 	app := c.app
 	cursor := c.sectionTitle(tr("catalog.title"), tr("catalog.subtitle"), tr("catalog.title.detail"), x, y, w)
+	if !app.cfg.TranslationNoticeShown {
+		noticeH := c.s(38)
+		c.roundedRect(x, cursor, w, noticeH, c.s(9), palette.WarnSoft, palette.Warn)
+		c.text(tr("catalog.translate.notice"), x+c.s(16), cursor, w-c.s(160)-c.s(32), noticeH, fonts.Small, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.compactButton("catalog-translate-notice-ok", tr("catalog.translate.notice_ok"), x+w-c.s(150), cursor, c.s(134), noticeH-c.s(6)-c.s(4))
+		c.addHit("catalog-translate-notice-ok", x+w-c.s(150), cursor, c.s(134), noticeH-c.s(6)-c.s(4))
+		cursor += noticeH + c.s(10)
+	}
+	_ = cursor
 
 	filtersTop := cursor + c.s(6)
 	gap := c.s(10)
@@ -457,7 +525,35 @@ func drawCatalogDetailPane(c *canvas, x, y, w, h int) {
 	if descriptionH < c.s(60) {
 		descriptionH = c.s(60)
 	}
+	// translation header row
+	chipH := c.s(30)
+	_, _, translateAvailable := c.app.ensureTranslated(item.Description)
+	if translateAvailable {
+		c.compactButton("catalog-show-original", tr("catalog.detail.original"), x+c.s(20), descriptionY, c.s(120), chipH)
+		c.addHit("catalog-show-original", x+c.s(20), descriptionY, c.s(120), chipH)
+		c.compactButton("catalog-show-translated", tr("catalog.detail.translated"), x+c.s(148), descriptionY, c.s(120), chipH)
+		c.addHit("catalog-show-translated", x+c.s(148), descriptionY, c.s(120), chipH)
+		state, _, _ := c.app.describeTranslate(item.Description)
+		if state == "busy" {
+			c.text(tr("catalog.detail.translate_busy"), x+c.s(284), descriptionY, w-c.s(304), chipH, fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+		} else if state == "error" {
+			c.text(tr("catalog.detail.translate_failed")+c.app.translateError, x+c.s(284), descriptionY, w-c.s(304), chipH, fonts.Tiny, palette.Bad, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		}
+	c.compactButton("catalog-refresh-translate", tr("catalog.detail.refresh"), x+c.s(284), descriptionY, c.s(130), chipH)
+		c.addHit("catalog-refresh-translate", x+c.s(284), descriptionY, c.s(130), chipH)
+		text := item.Description
+		if !c.app.catalogShowOriginal && c.app.translateState == "done" && c.app.translateResult != "" {
+			text = c.app.translateResult
+		}
+		drawScrollableDescription(c, 3, text, x+c.s(20), descriptionY+chipH+c.s(6), w-c.s(40), maxInt(c.s(60), descriptionH-chipH-c.s(6)), fonts.Small, palette.Text)
+		return
+	}
 	drawScrollableDescription(c, 3, item.Description, x+c.s(20), descriptionY, w-c.s(40), descriptionH, fonts.Small, palette.Text)
+}
+
+func (a *application) describeTranslate(desc string) (string, string, bool) {
+	_, state, available := a.ensureTranslated(desc)
+	return a.translateResult, state, available
 }
 
 func formatCatalogSize(size int64) string {
