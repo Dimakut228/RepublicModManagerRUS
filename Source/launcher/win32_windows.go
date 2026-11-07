@@ -47,6 +47,7 @@ const (
 	wmRMLCatalogDone             = wmApp + 47
 	wmRMLTransNotify             = wmApp + 49
 	wmRMLTranslateDone           = wmApp + 50
+	wmRMLThumbnailDone           = wmApp + 51
 
 	tmeLeave = 0x00000002
 

@@ -173,6 +173,92 @@ func atoiDefault(value string) int {
 	return n
 }
 
+// jsonBalancedSpan returns the region [start, end] starting at the first open
+// bracket in src that closes with the matching close bracket.
+func jsonBalancedSpan(src string) (string, bool) {
+	depth := 0
+	i := 0
+	inString := false
+	for i < len(src) {
+		ch := src[i]
+		if inString {
+			if ch == '\\' && i+1 < len(src) {
+				i += 2
+				continue
+			}
+			if ch == '"' {
+				inString = false
+			}
+		} else {
+			switch ch {
+			case '"':
+				inString = true
+			case '{':
+				depth++
+			case '}':
+				depth--
+				if depth == 0 {
+					return src[:i+1], true
+				}
+			}
+		}
+		i++
+	}
+	return "", false
+}
+
+// parseCatalogCategories extracts the public tag names Steam advertises in the
+// "declaredTags" block of the browse page. Unknown shapes yield nil so the
+// client falls back to the built-in list.
+func parseCatalogCategories(html string) []string {
+	unescaped := strings.ReplaceAll(html, `\"`, `"`)
+	idx := strings.Index(unescaped, `"declaredTags":{`)
+	if idx < 0 {
+		return nil
+	}
+	block, ok := jsonBalancedSpan(unescaped[idx+len(`"declaredTags":`):])
+	if !ok {
+		return nil
+	}
+	seen := map[string]bool{}
+	out := []string{}
+	var declared struct {
+		MtxTags []struct {
+			Tags []struct {
+				Name        string `json:"name"`
+				DisplayName string `json:"display_name"`
+				AdminOnly   bool   `json:"admin_only"`
+			} `json:"tags"`
+		} `json:"mtx_tags"`
+	}
+	if json.Unmarshal([]byte(block), &declared) == nil {
+		for _, group := range declared.MtxTags {
+			for _, tag := range group.Tags {
+				name := tag.DisplayName
+				if name == "" {
+					name = tag.Name
+				}
+				if tag.AdminOnly || name == "" || seen[name] {
+					continue
+				}
+				seen[name] = true
+				out = append(out, name)
+			}
+		}
+		return out
+	}
+	re := regexp.MustCompile(`"name":"([^"]{1,64})"`)
+	for _, m := range re.FindAllStringSubmatch(block, -1) {
+		name := m[1]
+		if name == "" || seen[name] {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	return out
+}
+
 /* Fetching ------------------------------------------------------------------------ */
 
 type cachedPage struct {
@@ -247,23 +333,71 @@ func saveDetailsCache(path string, item catalogItem) {
 
 func (c *catalogClient) fetchPageCached(q catalogQuery) (ids []string, total int, stale bool, err error) {
 	if c.KnowledgeRoot == "" {
-		ids, total, err = c.fetchPage(q)
-		return ids, total, false, err
+		html, total, err := c.fetchBrowseHTML(q)
+		if err != nil {
+			return nil, 0, false, err
+		}
+		ids, _, parseErr := parseBrowseResults(html)
+		return ids, total, false, parseErr
 	}
 	path := pageCachePath(c, q)
 	if page, ok := loadPageCache(path, catalogListTTL); ok {
 		return page.IDs, page.Total, false, nil
 	}
-	ids, total, err = c.fetchPage(q)
-	if err == nil {
-		savePageCache(path, cachedPage{Total: total, IDs: ids})
-		return ids, total, false, nil
+	html, liveTotal, liveErr := c.fetchBrowseHTML(q)
+	if liveErr == nil {
+		ids := []string{}
+		if recovered, _, parseErr := parseCatalogPageIDs(html); parseErr == nil {
+			ids = recovered
+		}
+		if len(ids) > 0 {
+			savePageCache(path, cachedPage{Total: liveTotal, IDs: ids})
+			return ids, liveTotal, false, nil
+		}
 	}
-	// Offline fallback: serve the previous cache even when it is stale.
 	if stalePage, ok := loadPageCacheStale(path); ok {
 		return stalePage.IDs, stalePage.Total, true, nil
 	}
-	return ids, total, false, err
+	return nil, 0, false, liveErr
+}
+
+func parseCatalogPageIDs(html string) ([]string, int, error) {
+	return parseBrowseResults(html)
+}
+
+// fetchCategories returns the Steam-advertised tag list with a 24h TTL. Falls
+// back to the built-in catalogPrimaryTags list on error.
+func (c *catalogClient) fetchCategories() []string {
+	root := catalogCachePath(c.KnowledgeRoot)
+	if root == "" {
+		return nil
+	}
+	path := filepath.Join(root, "categories.json")
+	data, _ := os.ReadFile(path)
+	var cached struct {
+		CreatedAt  int64    `json:"createdAt"`
+		Categories []string `json:"categories"`
+	}
+	if json.Unmarshal(data, &cached) == nil && time.Since(time.Unix(cached.CreatedAt, 0)) < 24*time.Hour && len(cached.Categories) > 0 {
+		return cached.Categories
+	}
+	// Refresh regardless of TTL — the list is small and Steam changes it.
+	html, _, err := c.fetchBrowseHTML(catalogQuery{Page: 1, Sort: catalogSortTrend})
+	if err != nil {
+		return nil
+	}
+	cats := parseCatalogCategories(html)
+	if len(cats) == 0 {
+		return nil
+	}
+	if mkdirErr := os.MkdirAll(filepath.Dir(path), 0o755); mkdirErr == nil {
+		payload, _ := json.MarshalIndent(map[string]any{
+			"createdAt":  time.Now().Unix(),
+			"categories": cats,
+		}, "", " ")
+		_ = os.WriteFile(path, append(payload, '\n'), 0o644)
+	}
+	return cats
 }
 
 func loadPageCacheStale(path string) (cachedPage, bool) {
@@ -327,7 +461,7 @@ func (c *catalogClient) doRequestWithRetries(req *http.Request) (*http.Response,
 	return nil, lastErr
 }
 
-func (c *catalogClient) fetchPage(q catalogQuery) ([]string, int, error) {
+func (c *catalogClient) fetchBrowseHTML(q catalogQuery) (string, int, error) {
 	browse := c.BrowseEndpoint
 	if browse == "" {
 		browse = catalogBrowseEndpoint
@@ -354,27 +488,32 @@ func (c *catalogClient) fetchPage(q catalogQuery) ([]string, int, error) {
 	}
 	req, err := http.NewRequest(http.MethodGet, browse+"?"+values.Encode(), nil)
 	if err != nil {
-		return nil, 0, err
+		return "", 0, err
 	}
 	req.Header.Set("User-Agent", fmt.Sprintf("RepublicModManagerRUS/%s", launcherVersion))
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	resp, err := c.doRequestWithRetries(req)
 	if err != nil {
-		return nil, 0, fmt.Errorf("catalog network error: %w", err)
+		return "", 0, fmt.Errorf("catalog network error: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, 0, fmt.Errorf("catalog returned status %d", resp.StatusCode)
+		return "", 0, fmt.Errorf("catalog returned status %d", resp.StatusCode)
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 6<<20))
 	if err != nil {
-		return nil, 0, err
+		return "", 0, err
 	}
 	html := string(body)
 	if strings.Contains(html, "<title>Steam Community :: Error</title>") {
-		return nil, 0, fmt.Errorf("catalog returned an error page")
+		return "", 0, fmt.Errorf("catalog returned an error page")
 	}
-	return parseBrowseResults(html)
+	ids, total, sweepErr := parseBrowseResults(html)
+	if sweepErr != nil {
+		return "", 0, sweepErr
+	}
+	_ = ids
+	return html, total, nil
 }
 
 func (c *catalogClient) fetchDetails(ids []string) (map[string]catalogItem, error) {

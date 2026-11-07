@@ -55,6 +55,22 @@ func catalogSortLabelFor(code string) string {
 
 /* Fetch orchestration -------------------------------------------------------------- */
 
+// prefetchCatalogCategories refreshes the advertised Steam tag list in the
+// background; it never replaces the built-in list with an empty result.
+func (a *application) prefetchCatalogCategories(gen uint32) {
+	client := &catalogClient{
+		HTTPClient:    httpDefaultClient,
+		KnowledgeRoot: a.knowledgeRoot,
+	}
+	cats := client.fetchCategories()
+	if len(cats) == 0 {
+		return
+	}
+	a.workshopMu.Lock()
+	defer a.workshopMu.Unlock()
+	a.catalogCategories = append([]string{}, cats...)
+}
+
 func (a *application) startCatalogFetch() {
 	a.workshopMu.Lock()
 	a.catalogBusy = true
@@ -63,6 +79,7 @@ func (a *application) startCatalogFetch() {
 	a.workshopMu.Unlock()
 	a.status = tr("catalog.state.loading")
 	invalidateWindow(a.hwnd)
+	go a.prefetchCatalogCategories(gen)
 	client := &catalogClient{
 		HTTPClient:    httpDefaultClient,
 		KnowledgeRoot: a.knowledgeRoot,
@@ -87,7 +104,7 @@ func (a *application) startCatalogFetch() {
 		a.catalogOffline = stale
 		a.workshopMu.Unlock()
 		if err != nil {
-			a.status = tr("catalog.load_failed") + err.Error()
+			a.status = tr("catalog.load_failed") + catalogErrorReason(err)
 			a.workshopMu.Lock()
 			a.catalogBusy = false
 			a.catalogOffline = false
@@ -110,7 +127,7 @@ func (a *application) startCatalogFetch() {
 		a.workshopMu.Unlock()
 		switch {
 		case detailsErr != nil:
-			a.status = tr("catalog.details_failed") + detailsErr.Error()
+			a.status = tr("catalog.details_failed") + catalogErrorReason(detailsErr)
 		case stale:
 			a.status = tr("catalog.state.offline")
 		default:
@@ -118,6 +135,9 @@ func (a *application) startCatalogFetch() {
 		}
 		invalidateWindow(a.hwnd)
 		postAppMessage(a.hwnd, wmRMLCatalogDone, 0, 0)
+		if len(details) > 0 {
+			a.prefetchCatalogThumbs(ids)
+		}
 	}()
 }
 
@@ -213,6 +233,54 @@ func catalogTagsLabel(tags []string) string {
 		return tr("catalog.filters.none")
 	}
 	return strings.Join(tags, ", ")
+}
+
+func (a *application) catalogThumbImage(itemID string) uintptr {
+	if a.catalogThumbID != itemID {
+		a.releaseCatalogThumb()
+	}
+	if a.catalogThumbBitmap != 0 {
+		return a.catalogThumbBitmap
+	}
+	path := thumbnailPathFor(a.knowledgeRoot, itemID)
+	if path == "" {
+		return 0
+	}
+	a.catalogThumbID = itemID
+	a.catalogThumbBitmap = loadGDIPlusImage(path)
+	return a.catalogThumbBitmap
+}
+
+func (a *application) releaseCatalogThumb() {
+	if a.catalogThumbBitmap != 0 {
+		disposeGDIPlusImage(a.catalogThumbBitmap)
+	}
+	a.catalogThumbBitmap = 0
+	a.catalogThumbID = ""
+}
+
+// catalogErrorReason maps common catalog failures onto short RU/EN strings so
+// the status line does not show raw Go error text.
+func catalogErrorReason(err error) string {
+	text := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(text, "context deadline") || strings.Contains(text, "dial tcp") || strings.Contains(text, "no such host") || strings.Contains(text, "network"):
+		return tr("catalog.err.network")
+	case strings.Contains(text, "status "):
+		index := strings.Index(text, "status ")
+		if index >= 0 {
+			return tr("catalog.err.status") + strings.TrimSpace(text[index+len("status "):])
+		}
+		return tr("catalog.err.status") + err.Error()
+	case strings.Contains(text, "error page"):
+		return tr("catalog.err.page")
+	case strings.Contains(text, "parse"):
+		return tr("catalog.err.parse")
+	case strings.Contains(text, "details parse") || strings.Contains(text, "details service"):
+		return tr("catalog.err.details")
+	default:
+		return err.Error()
+	}
 }
 
 func (a *application) catalogItemInstalled(itemID string) bool {
@@ -420,7 +488,7 @@ func drawCatalogPage(c *canvas, x, y, w, h int) {
 	chipY := cursor
 	chipX := x
 	chipH := c.s(30)
-	for _, tag := range catalogPrimaryTags {
+	for _, tag := range app.catalogCategories {
 		label := tag
 		for _, sel := range app.catalogTags {
 			if sel == tag {
@@ -525,12 +593,24 @@ func drawCatalogListColumn(c *canvas, x, y, w, h int) {
 		if ok {
 			title = catalogCatalogTitle(item)
 		}
-		c.text(title, x+c.s(18), ry+c.s(4), w-c.s(36), c.s(26), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		thumbX := x + c.s(12)
+		thumbW := c.s(64)
+		image := app.catalogThumbImage(app.catalogIDs[i])
+		if image != 0 {
+			drawGDIPlusImageContainedNative(c.dc, image, thumbX, ry+c.s(3), thumbW, rowH-c.s(10))
+		} else {
+			c.text(tr("catalog.detail.thumbnails_missing"), thumbX, ry+c.s(3), thumbW, rowH-c.s(10), fonts.Tiny, palette.TextFaint, dtCenter|dtVCenter|dtSingleLine)
+		}
+		titleX := thumbX + thumbW + c.s(8)
+		c.text(title, titleX, ry+c.s(4), x+w-titleX-c.s(24), c.s(26), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		second := tr("catalog.detail.id") + app.catalogIDs[i]
 		if ok {
 			second = fmt.Sprintf(tr("catalog.list.meta"), item.Subscriptions, item.Views, formatCatalogSize(item.FileSize))
 		}
-		c.text(second, x+c.s(18), ry+c.s(30), w-c.s(36), c.s(24), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.text(second, titleX, ry+c.s(30), x+w-titleX-c.s(24), c.s(24), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		if app.catalogItemInstalled(app.catalogIDs[i]) {
+			c.pill(tr("catalog.state.installed"), 0, x+w-c.s(86), ry+c.s(16), c.s(66), c.s(26))
+		}
 		c.addHit(id, x+c.s(6), ry, w-c.s(12), rowH-c.s(4))
 	}
 }
@@ -544,9 +624,19 @@ func drawCatalogDetailPane(c *canvas, x, y, w, h int) {
 		return
 	}
 	title := catalogCatalogTitle(item)
-	c.text(title, x+c.s(20), y+c.s(16), w-c.s(40), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(title, x+c.s(20), y+c.s(16), w-c.s(40)-c.s(112), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 	metaLine := fmt.Sprintf(tr("catalog.list.meta"), item.Subscriptions, item.Views, formatCatalogSize(item.FileSize))
-	c.text(metaLine, x+c.s(20), y+c.s(52), w-c.s(40), c.s(24), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+	c.text(metaLine, x+c.s(20), y+c.s(52), w-c.s(40)-c.s(112), c.s(24), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+
+	// Card thumbnail.
+	thumbX := x + w - c.s(126)
+	thumbY := y + c.s(14)
+	image := c.app.catalogThumbImage(item.ID)
+	if image != 0 {
+		drawGDIPlusImageContainedNative(c.dc, image, thumbX, thumbY, c.s(110), c.s(62))
+	} else {
+		c.text(tr("catalog.detail.thumbnails_missing"), thumbX, thumbY, c.s(110), c.s(62), fonts.Tiny, palette.TextFaint, dtCenter|dtWordBreak)
+	}
 
 	// Buttons
 	bottomY := y + h - c.s(46)
@@ -582,7 +672,7 @@ func drawCatalogDetailPane(c *canvas, x, y, w, h int) {
 		} else if state == "error" {
 			c.text(tr("catalog.detail.translate_failed")+c.app.translateError, x+c.s(284), descriptionY, w-c.s(304), chipH, fonts.Tiny, palette.Bad, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		}
-	c.compactButton("catalog-refresh-translate", tr("catalog.detail.refresh"), x+c.s(284), descriptionY, c.s(130), chipH)
+		c.compactButton("catalog-refresh-translate", tr("catalog.detail.refresh"), x+c.s(284), descriptionY, c.s(130), chipH)
 		c.addHit("catalog-refresh-translate", x+c.s(284), descriptionY, c.s(130), chipH)
 		text := item.Description
 		if !c.app.catalogShowOriginal && c.app.translateState == "done" && c.app.translateResult != "" {
@@ -610,4 +700,3 @@ func formatCatalogSize(size int64) string {
 	value := float64(size) / float64(mib)
 	return fmt.Sprintf(tr("catalog.size.mb"), value)
 }
-

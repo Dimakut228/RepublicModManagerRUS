@@ -379,6 +379,11 @@ func windowProc(hwnd uintptr, message uint32, wparam, lparam uintptr) uintptr {
 			invalidateWindow(hwnd)
 		}
 		return 0
+	case wmRMLThumbnailDone:
+		if app != nil {
+			invalidateWindow(hwnd)
+		}
+		return 0
 	case wmClose:
 		procDestroyWindow.Call(hwnd)
 		return 0
@@ -388,6 +393,7 @@ func windowProc(hwnd uintptr, message uint32, wparam, lparam uintptr) uintptr {
 			app.releaseWorkshopImage()
 			app.releaseDevelopmentImage()
 			app.releasePluginImage()
+			app.releaseCatalogThumb()
 			if app.brandImage != 0 {
 				disposeGDIPlusImage(app.brandImage)
 				app.brandImage = 0

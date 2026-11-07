@@ -155,6 +155,8 @@ type application struct {
 	catalogPage          int
 	catalogSel           int            // index into catalogIDs
 	catalogTags          []string       // selected required tags
+	catalogCategories    []string       // advertised Steam tags
+	catalogCategoriesBusy bool
 	catalogBusy          bool
 	catalogFetchGen      uint32
 	catalogDetailScroll  int
@@ -165,6 +167,10 @@ type application struct {
 	catalogOriginalText  string
 	catalogSelectedID    string
 	catalogOffline       bool
+	catalogThumbPending  map[string]bool
+	catalogThumbPath     string
+	catalogThumbID       string
+	catalogThumbBitmap   uintptr
 	translateMu          sync.Mutex
 	translateSource      string // normalised source currently handled
 	translateState       string // "", busy, done, error
@@ -199,6 +205,7 @@ func newApplication(base string) *application {
 		logPath:             filepath.Join(base, "rml", "logs", "rml-runtime.log"),
 		runtimeDLL:          filepath.Join(base, "rml_runtime.dll"),
 		knowledgeRoot:       persistentKnowledgeRoot(base),
+		catalogCategories:   append([]string{}, catalogPrimaryTags...),
 		selected:            0,
 		selectedWorkshop:    -1,
 		selectedDevelopment: -1,
