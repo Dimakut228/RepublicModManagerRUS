@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
-var navItems = []struct{ Label, Hint string }{
-	{"Dashboard", "Launch overview"},
-	{"Mod Manager", "Mods and playlists"},
-	{"Diagnostics", "Logs"},
+var navItems = []struct{ LabelKey, HintKey string }{
+	{LabelKey: "nav.dashboard", HintKey: "nav.dashboard.hint"},
+	{LabelKey: "nav.mods", HintKey: "nav.mods.hint"},
+	{LabelKey: "nav.diagnostics", HintKey: "nav.diagnostics.hint"},
 }
 
 func renderApplication(app *application, dc uintptr, width, height int) {
@@ -170,7 +171,7 @@ func drawBuildSHATooltip(c *canvas) {
 		y = c.height - h - c.s(4)
 	}
 	c.roundedRect(x, y, w, h, c.s(5), rgb(24, 31, 41), palette.BorderBright)
-	c.text("Click to Copy", x+c.s(6), y, w-c.s(12), h, fonts.Tiny, palette.Text, dtLeft|dtVCenter|dtSingleLine)
+	c.text(tr("tooltip.copy_build_sha"), x+c.s(6), y, w-c.s(12), h, fonts.Tiny, palette.Text, dtLeft|dtVCenter|dtSingleLine)
 }
 
 func drawGenericTooltip(c *canvas, text string) {
@@ -282,8 +283,8 @@ func drawSidebar(c *canvas, w, h int) {
 	c.fillRect(0, 0, w, h, palette.Sidebar)
 	c.line(w-c.s(1), 0, w-c.s(1), h, c.s(1), palette.Border)
 	c.drawBrand(c.s(25), c.s(25))
-	c.text("REPUBLIC", c.s(80), c.s(22), w-c.s(96), c.s(24), fonts.Title, palette.Text, dtLeft|dtVCenter|dtSingleLine)
-	c.text("MOD LOADER", c.s(80), c.s(45), w-c.s(96), c.s(18), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+	c.text(tr("brand.line1"), c.s(80), c.s(22), w-c.s(96), c.s(24), fonts.Title, palette.Text, dtLeft|dtVCenter|dtSingleLine)
+	c.text(tr("brand.line2"), c.s(80), c.s(45), w-c.s(96), c.s(18), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
 
 	y := c.s(105)
 	for i, item := range navItems {
@@ -310,10 +311,13 @@ func drawSidebar(c *canvas, w, h int) {
 		if selected {
 			iconFill, iconText = palette.Accent, palette.White
 		}
+		label := tr(item.LabelKey)
+		hint := tr(item.HintKey)
+		iconChar, _ := utf8.DecodeRuneInString(label)
 		c.circle(x+c.s(15), y+c.s(13), c.s(29), iconFill, iconFill)
-		c.text(string(item.Label[0]), x+c.s(15), y+c.s(13), c.s(29), c.s(29), fonts.SmallStrong, iconText, dtCenter|dtVCenter|dtSingleLine)
-		c.text(item.Label, x+c.s(55), y+c.s(8), rowW-c.s(66), c.s(24), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
-		c.text(item.Hint, x+c.s(55), y+c.s(29), rowW-c.s(66), c.s(18), fonts.Tiny, palette.TextFaint, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.text(string(iconChar), x+c.s(15), y+c.s(13), c.s(29), c.s(29), fonts.SmallStrong, iconText, dtCenter|dtVCenter|dtSingleLine)
+		c.text(label, x+c.s(55), y+c.s(8), rowW-c.s(66), c.s(24), fonts.BodyStrong, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+		c.text(hint, x+c.s(55), y+c.s(29), rowW-c.s(66), c.s(18), fonts.Tiny, palette.TextFaint, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 		c.addHit(id, x, y, rowW, rowH)
 		y += c.s(62)
 	}
@@ -368,22 +372,22 @@ func drawWorkshopForceUpdateModal(c *canvas) {
 }
 
 func drawDashboardPage(c *canvas, x, y, w, h int) {
-	cursor := c.sectionTitle("CENTRAL COMMITTEE", "Republic Mod Loader", "", x, y, w)
+	cursor := c.sectionTitle(tr("t.central_committee"), "Republic Mod Loader", "", x, y, w)
 
 	gameH := c.s(168)
 	c.card(x, cursor, w, gameH)
-	gameName := "Workers & Resources: Soviet Republic"
-	buildVersion := "Build Version: —"
-	buildSHA := "Build SHA: —"
+	gameName := tr("game.name")
+	buildVersion := tr("dashboard.build_version.none")
+	buildSHA := tr("dashboard.build_sha.none")
 	gameClass := 2
 	if c.app.game != nil {
 		if c.app.game.Version != "" {
-			buildVersion = "Build Version: " + c.app.game.Version
+			buildVersion = tr("dashboard.build_version") + c.app.game.Version
 		} else {
-			buildVersion = "Build Version: untested"
+			buildVersion = tr("dashboard.build_version.untested")
 		}
 		if c.app.game.SHA256 != "" {
-			buildSHA = "Build SHA: " + c.app.game.SHA256
+			buildSHA = tr("dashboard.build_sha") + c.app.game.SHA256
 		}
 		if c.app.game.Known {
 			gameClass = 0
@@ -391,7 +395,7 @@ func drawDashboardPage(c *canvas, x, y, w, h int) {
 			gameClass = 1
 		}
 	} else if c.app.gameError != "" {
-		buildSHA = "Build SHA: " + safeLine(c.app.gameError)
+		buildSHA = tr("dashboard.build_sha") + safeLine(c.app.gameError)
 	}
 	c.text(gameName, x+c.s(22), cursor+c.s(18), w-c.s(220), c.s(36), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 	c.text(buildVersion, x+c.s(34), cursor+c.s(60), w-c.s(230), c.s(24), fonts.Body, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
@@ -410,33 +414,33 @@ func drawDashboardPage(c *canvas, x, y, w, h int) {
 	}
 	fill, fg := statusColors(gameClass, "")
 	c.roundedRect(x+w-c.s(176), cursor+c.s(22), c.s(145), c.s(32), c.s(16), fill, fill)
-	gameState := "NEEDS PATH"
+	gameState := tr("dashboard.state.needs_path")
 	if c.app.game != nil && c.app.game.Known {
-		gameState = "RECOGNISED"
+		gameState = tr("dashboard.state.recognised")
 	}
 	if c.app.game != nil && !c.app.game.Known {
-		gameState = "UNTESTED"
+		gameState = tr("dashboard.state.untested")
 	}
 	c.text(gameState, x+w-c.s(176), cursor+c.s(22), c.s(145), c.s(32), fonts.Tiny, fg, dtCenter|dtVCenter|dtSingleLine)
-	c.compactButton("browse", "Choose executable", x+w-c.s(176), cursor+c.s(70), c.s(145), c.s(36))
+	c.compactButton("browse", tr("dashboard.choose_exe"), x+w-c.s(176), cursor+c.s(70), c.s(145), c.s(36))
 	cursor += gameH + c.s(16)
 
 	gap := c.s(14)
 	metricW := (w - gap*2) / 3
 	metricH := c.s(116)
-	lastState := "No previous launch"
+	lastState := tr("dashboard.no_launch")
 	lastDetail := ""
 	lastClass := 1
 	if c.app.lastLaunchError != "" {
-		lastState, lastDetail, lastClass = "Launch error", safeLine(c.app.lastLaunchError), 2
+		lastState, lastDetail, lastClass = tr("dashboard.launch_error"), safeLine(c.app.lastLaunchError), 2
 	} else if c.app.report != nil {
 		if c.app.report.BootstrapStatus == 0 {
-			lastState, lastDetail, lastClass = "Loader OK", "Last bootstrap completed successfully", 0
+			lastState, lastDetail, lastClass = tr("dashboard.loader_ok"), tr("dashboard.loader_ok_detail"), 0
 		} else {
-			lastState, lastDetail, lastClass = fmt.Sprintf("0x%X", c.app.report.BootstrapStatus), "Last bootstrap reported a problem", 2
+			lastState, lastDetail, lastClass = fmt.Sprintf(tr("t.0x_x"), c.app.report.BootstrapStatus), tr("dashboard.loader_problem"), 2
 		}
 	}
-	c.metricCard("Discovered", fmt.Sprintf("%d Plugins / %d Workshop", len(c.app.plugins), len(c.app.workshopItems)), "", x, cursor, metricW, metricH, 0)
+	c.metricCard(tr("dashboard.metric.discovered"), fmt.Sprintf(tr("dashboard.metric.discovered_value"), len(c.app.plugins), len(c.app.workshopItems)), "", x, cursor, metricW, metricH, 0)
 	enabledWorkshop := 0
 	enabledDevelopment := 0
 	enabledWorkshopUpdates := 0
@@ -458,13 +462,13 @@ func drawDashboardPage(c *canvas, x, y, w, h int) {
 	enabledDetail := ""
 	enabledClass := 0
 	if enabledWorkshopUpdates > 0 {
-		enabledDetail = fmt.Sprintf("%d enabled Workshop item(s) may need updating", enabledWorkshopUpdates)
+		enabledDetail = fmt.Sprintf(tr("dashboard.metric.enabled_detail_update"), enabledWorkshopUpdates)
 		enabledClass = 1
 	} else if enabledDevelopment > 0 {
-		enabledDetail = fmt.Sprintf("%d Development project(s) active", enabledDevelopment)
+		enabledDetail = fmt.Sprintf(tr("dashboard.metric.enabled_detail_dev"), enabledDevelopment)
 	}
-	c.metricCard("Enabled", fmt.Sprintf("%d Plugins / %d Workshop", c.app.enabledCount(), enabledWorkshop), enabledDetail, x+metricW+gap, cursor, metricW, metricH, enabledClass)
-	c.metricCard("Last launch", lastState, lastDetail, x+(metricW+gap)*2, cursor, metricW, metricH, lastClass)
+	c.metricCard(tr("dashboard.metric.enabled"), fmt.Sprintf(tr("dashboard.metric.discovered_value"), c.app.enabledCount(), enabledWorkshop), enabledDetail, x+metricW+gap, cursor, metricW, metricH, enabledClass)
+	c.metricCard(tr("dashboard.metric.last_launch"), lastState, lastDetail, x+(metricW+gap)*2, cursor, metricW, metricH, lastClass)
 	cursor += metricH + c.s(16)
 
 	lowerH := maxInt(c.s(168), h-(cursor-y)-c.s(94))
@@ -475,13 +479,13 @@ func drawDashboardPage(c *canvas, x, y, w, h int) {
 
 	launchY := y + h - c.s(72)
 	c.roundedRect(x, launchY, w, c.s(58), c.s(14), palette.SurfaceRaised, palette.BorderBright)
-	launchText := "Launch Workers & Resources"
+	launchText := tr("dashboard.launch")
 	if c.app.busy {
-		launchText = "Launching and validating runtime…"
+		launchText = tr("dashboard.launching")
 	}
 	buttonW := c.s(278)
 	c.button("launch", launchText, x+w-buttonW-c.s(10), launchY+c.s(8), buttonW, c.s(42), true)
-	state := "Ready to launch with RML"
+	state := tr("dashboard.ready")
 	if ok, reason := c.app.canLaunch(); !ok {
 		state = reason
 	}
@@ -490,12 +494,12 @@ func drawDashboardPage(c *canvas, x, y, w, h int) {
 
 func drawDashboardPlaylistCard(c *canvas, x, y, w, h int) {
 	c.card(x, y, w, h)
-	c.label("Playlist", x+c.s(18), y+c.s(15), w-c.s(36), palette.TextMuted)
+	c.label(tr("dashboard.playlist.label"), x+c.s(18), y+c.s(15), w-c.s(36), palette.TextMuted)
 	name := c.app.cfg.SelectedPlaylist
 	if name == "" {
 		name = defaultPlaylistName
 	}
-	c.text("Active mod configuration", x+c.s(18), y+c.s(39), w-c.s(36), c.s(25), fonts.Title, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.text(tr("dashboard.playlist.title"), x+c.s(18), y+c.s(39), w-c.s(36), c.s(25), fonts.Title, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 
 	dropX := x + c.s(18)
 	dropY := y + c.s(76)
@@ -513,29 +517,29 @@ func drawDashboardPlaylistCard(c *canvas, x, y, w, h int) {
 	c.addHit("playlist-dropdown", dropX, dropY, dropW, dropH)
 	c.app.playlistDropX, c.app.playlistDropY, c.app.playlistDropW = dropX, dropY+dropH+c.s(3), dropW
 
-	mode := "Automatic dependency ordering"
+	mode := tr("dashboard.playlist.auto")
 	if !c.app.cfg.AutoOrder {
-		mode = "Saved / manual playlist order"
+		mode = tr("dashboard.playlist.manual")
 	}
-	detail := fmt.Sprintf("%d enabled • %s", c.app.enabledCount(), mode)
+	detail := fmt.Sprintf(tr("dashboard.playlist.detail"), c.app.enabledCount(), mode)
 	c.text(detail, x+c.s(18), dropY+c.s(50), w-c.s(36), c.s(30), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 }
 
 func drawDashboardSettingsCard(c *canvas, x, y, w, h int) {
 	c.card(x, y, w, h)
-	c.label("Settings", x+c.s(18), y+c.s(15), w-c.s(36), palette.TextMuted)
-	c.text("Launch & support", x+c.s(18), y+c.s(36), w-c.s(36), c.s(25), fonts.Title, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
+	c.label(tr("dashboard.settings.label"), x+c.s(18), y+c.s(15), w-c.s(36), palette.TextMuted)
+	c.text(tr("dashboard.settings.title"), x+c.s(18), y+c.s(36), w-c.s(36), c.s(25), fonts.Title, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 
 	rows := []struct {
 		Title string
 		ID    string
 		Value bool
 	}{
-		{"Detailed Diagnostic Logging", "verbose-diagnostics", c.app.cfg.VerboseDiagnostics},
-		{"Automatic crash archives", "auto-crash-archives", c.app.cfg.AutoCrashArchives},
-		{"Automatic ordering", "auto-order", c.app.cfg.AutoOrder},
-		{"Close after launch", "close-after", c.app.cfg.CloseAfterLaunch},
-		{"Hide while WRSR runs", "auto-hide", c.app.cfg.AutoHideOnLaunch},
+		{tr("settings.verbose_diag"), "verbose-diagnostics", c.app.cfg.VerboseDiagnostics},
+		{tr("settings.auto_crash"), "auto-crash-archives", c.app.cfg.AutoCrashArchives},
+		{tr("settings.auto_order"), "auto-order", c.app.cfg.AutoOrder},
+		{tr("settings.close_after"), "close-after", c.app.cfg.CloseAfterLaunch},
+		{tr("settings.auto_hide"), "auto-hide", c.app.cfg.AutoHideOnLaunch},
 	}
 	contentY := y + c.s(65)
 	available := maxInt(c.s(90), h-c.s(76))

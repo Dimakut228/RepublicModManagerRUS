@@ -176,7 +176,7 @@ func newApplication(base string) *application {
 		selectedDevelopment: -1,
 		invalidClickPlugin:  -1,
 		page:                0,
-		status:              "Ready",
+		status:              tr("status.ready"),
 		dpi:                 96,
 		scale:               1,
 	}
@@ -202,7 +202,7 @@ func newApplication(base string) *application {
 func (a *application) refresh(save bool) {
 	merged, journalWarnings := mergeSessionJournals(a.baseDir, a.knowledgeRoot)
 	if merged > 0 {
-		a.status = fmt.Sprintf("Merged %d completed/crash-recovery behaviour journal(s)", merged)
+		a.status = fmt.Sprintf(tr("t.merged_d_completed_crash"), merged)
 	}
 	a.scanWarnings = append(a.scanWarnings[:0], journalWarnings...)
 	// Workshop discovery now precedes plugin discovery because a Workshop item may
@@ -305,7 +305,7 @@ func (a *application) refreshDiagnostics() {
 			_ = mergeRuntimeReportIntoSymbolCache(a.knowledgeRoot, a.game, report)
 		}
 	}
-	a.logTail = "No runtime log has been produced yet."
+	a.logTail = tr("t.no_runtime_log_has")
 	if data, err := os.ReadFile(a.logPath); err == nil {
 		if len(data) > 24000 {
 			data = data[len(data)-24000:]
@@ -402,7 +402,7 @@ func (a *application) enabledCount() int {
 
 func (a *application) canLaunch() (bool, string) {
 	if a.busy {
-		return false, "Launch already in progress"
+		return false, tr("t.launch_already_in_progress")
 	}
 	if err := selectedGameError(a.game); err != nil {
 		return false, err.Error()
@@ -413,7 +413,7 @@ func (a *application) canLaunch() (bool, string) {
 func (a *application) startLaunch() {
 	ok, reason := a.canLaunch()
 	if !ok {
-		a.status = "Cannot launch: " + reason
+		a.status = tr("t.cannot_launch") + reason
 		invalidateWindow(a.hwnd)
 		return
 	}
@@ -440,7 +440,7 @@ func (a *application) startLaunch() {
 	for _, p := range launchPlugins {
 		switch {
 		case !p.BasicValid:
-			reason := "basic PE validation failed"
+			reason := tr("t.basic_pe_validation_failed")
 			if len(p.PEValidation.Failures) > 0 {
 				reason = strings.Join(p.PEValidation.Failures, "; ")
 			}
@@ -453,7 +453,7 @@ func (a *application) startLaunch() {
 	}
 	launchOrdered, launchWarnings := calculateOrder(launchPlugins, a.cfg.AutoOrder)
 	for _, warning := range launchWarnings {
-		appendLauncherLog(logPath, "plugin ordering warning (launch will continue with safe subset): %s", warning)
+		appendLauncherLog(logPath, tr("t.plugin_ordering_warning_launch"), warning)
 	}
 	appendLauncherLog(logPath, "Workshop inventory: installed=%d enabled=%d; Normal profile uses an explicit enabled-ID allow-list", len(a.workshopItems), a.enabledWorkshopCount())
 	appendLauncherLog(logPath, "Development inventory: local=%d enabled=%d root=%s", len(a.developmentItems), a.enabledDevelopmentCount(), developmentRootFromGamePath(a.cfg.GamePath))
@@ -476,7 +476,7 @@ func (a *application) startLaunch() {
 		}
 	}
 	if developmentDLLCount > 0 {
-		appendLauncherLog(logPath, "Development DLL payloads discovered: %d (independent of Plugins/Workshop)", developmentDLLCount)
+		appendLauncherLog(logPath, tr("t.development_dll_payloads_discovered"), developmentDLLCount)
 	}
 	if profile.ID == profileDeepTest {
 		appendLauncherLog(logPath, "DIAGNOSTIC TRACE: enabled plugin/load-order snapshot BEGIN")
@@ -515,7 +515,7 @@ func (a *application) startLaunch() {
 	planErr := writeRuntimePlan(a.planPath, a.cfg, *a.game, launchOrdered, profile, a.lastSessionID, a.symbolCache, a.workshopItems)
 	_ = saveConfig(a.configPath, a.cfg)
 	a.busy = true
-	a.status = "Launching WRSR — " + profile.Name + "…"
+	a.status = tr("t.launching_wrsr") + profile.Name + "…"
 	invalidateWindow(a.hwnd)
 	gamePath := a.game.Path
 	runtime := a.runtimeDLL
@@ -527,8 +527,8 @@ func (a *application) startLaunch() {
 		var result LaunchResult
 		var err error
 		if planErr != nil {
-			reason := "runtime plan could not be written: " + planErr.Error()
-			appendLauncherLog(logPath, "%s; launch aborted before WRSR was started", reason)
+			reason := tr("t.runtime_plan_could_not") + planErr.Error()
+			appendLauncherLog(logPath, tr("t.s_launch_aborted_before"), reason)
 			err = errors.New(reason)
 		} else {
 			result, err = launchAndInject(gamePath, runtime, root, LaunchOptions{Profile: profile.ID, SessionID: sessionID})
@@ -567,12 +567,12 @@ func (a *application) finishLaunch() {
 			}
 		}
 		a.lastLaunchError = detail
-		a.status = "Error loading — " + detail
+		a.status = tr("t.error_loading") + detail
 		a.page = 0
 		_ = writeHighLevelSessionLog(a.baseDir, 0xFFFFFFFF, string(profile.ID), 0)
 		if a.cfg.AutoCrashArchives {
-			if p, err := createSupportArchive(a.baseDir, "RML bootstrap/launch failure: "+detail); err == nil {
-				a.status += " — crash archive: " + filepath.Base(p)
+			if p, err := createSupportArchive(a.baseDir, tr("t.rml_bootstrap_launch_failure")+detail); err == nil {
+				a.status += tr("t.crash_archive") + filepath.Base(p)
 			}
 		}
 		if profile.ID == profileDeepTest {
@@ -587,17 +587,17 @@ func (a *application) finishLaunch() {
 				a.deepPreviousProfile = ""
 				_ = saveConfig(a.configPath, a.cfg)
 			}
-			a.status = "Detailed diagnostic bootstrap failed — detailed trace finalized: " + detail
+			a.status = tr("t.detailed_diagnostic_bootstrap_failed") + detail
 		}
 	} else if profile.ID == profileDeepTest {
 		a.lastLaunchError = ""
-		a.status = fmt.Sprintf("Detailed diagnostic session active (PID %d)", completion.Result.ProcessID)
+		a.status = fmt.Sprintf(tr("t.detailed_diagnostic_session_active"), completion.Result.ProcessID)
 	} else if completion.Result.BootstrapStatus != 0 {
 		a.lastLaunchError = ""
-		a.status = fmt.Sprintf("WRSR launched with degraded RML status 0x%X — %s", completion.Result.BootstrapStatus, profile.Name)
+		a.status = fmt.Sprintf(tr("t.wrsr_launched_with_degraded"), completion.Result.BootstrapStatus, profile.Name)
 	} else {
 		a.lastLaunchError = ""
-		a.status = fmt.Sprintf("WRSR + RML launched successfully (PID %d) — %s", completion.Result.ProcessID, profile.Name)
+		a.status = fmt.Sprintf(tr("t.wrsr_rml_launched_successfully"), completion.Result.ProcessID, profile.Name)
 	}
 	a.refreshSymbolCache()
 	invalidateWindow(a.hwnd)
@@ -613,16 +613,16 @@ func (a *application) finishLaunch() {
 func (a *application) chooseGame() {
 	if path := openGameDialog(a.hwnd, a.cfg.GamePath); path != "" {
 		a.cfg.GamePath = path
-		a.status = "Checking SOVIET64.exe…"
+		a.status = tr("t.checking_soviet64_exe")
 		a.refresh(true)
 		if a.game != nil {
 			if a.game.Known {
-				a.status = "Recognised WRSR " + a.game.Version
+				a.status = tr("t.recognised_wrsr") + a.game.Version
 			} else {
-				a.status = "Untested WRSR executable selected"
+				a.status = tr("t.untested_wrsr_executable_selected")
 			}
 		} else if a.gameError != "" {
-			a.status = "Game validation failed: " + a.gameError
+			a.status = tr("t.game_validation_failed") + a.gameError
 		}
 		invalidateWindow(a.hwnd)
 	}
@@ -639,7 +639,7 @@ func (a *application) resetRecommended() {
 	a.cfg.SelectedPlaylist = defaultPlaylistName
 	a.captureDefaultConfiguration()
 	a.refresh(true)
-	a.status = "Recommended Default plugin configuration restored"
+	a.status = tr("t.recommended_default_plugin_configura")
 }
 
 func (a *application) requestWorkshopUnsubscribeByID(id, fallbackName string) {
@@ -651,13 +651,13 @@ func (a *application) requestWorkshopUnsubscribeByID(id, fallbackName string) {
 		name = item.Name
 	}
 	if name == "" {
-		name = "Workshop Item " + id
+		name = tr("t.workshop_item") + id
 	}
 	a.workshopUnsubscribeID = id
 	a.workshopUnsubscribeName = name
 	a.workshopUnsubscribeModal = true
 	a.modSearchFocus = false
-	a.status = "Confirm Workshop unsubscribe"
+	a.status = tr("t.confirm_workshop_unsubscribe")
 	invalidateWindow(a.hwnd)
 }
 
@@ -673,7 +673,7 @@ func (a *application) cancelWorkshopUnsubscribe() {
 	a.workshopUnsubscribeModal = false
 	a.workshopUnsubscribeID = ""
 	a.workshopUnsubscribeName = ""
-	a.status = "Workshop unsubscribe cancelled"
+	a.status = tr("t.workshop_unsubscribe_cancelled")
 	invalidateWindow(a.hwnd)
 }
 
@@ -684,7 +684,7 @@ func (a *application) beginWorkshopUnsubscribe() {
 	id, name, gamePath, hwnd := a.workshopUnsubscribeID, a.workshopUnsubscribeName, a.cfg.GamePath, a.hwnd
 	a.workshopUnsubscribeModal = false
 	a.workshopActionBusy = true
-	a.status = "Requesting Steam Workshop unsubscribe for " + name + "…"
+	a.status = tr("t.requesting_steam_workshop_unsubscrib") + name + "…"
 	invalidateWindow(a.hwnd)
 	go func() {
 		outcome := unsubscribeWorkshopItem(gamePath, id)
@@ -765,12 +765,12 @@ func (a *application) finishWorkshopUnsubscribe() {
 	if completion.Outcome.Message != "" {
 		a.status = completion.Name + ": " + completion.Outcome.Message
 	} else {
-		a.status = completion.Name + ": Workshop unsubscribe finished"
+		a.status = completion.Name + tr("t.workshop_unsubscribe_finished")
 	}
 	if completion.Outcome.FilesDeleteError != "" {
-		a.status += "; local files could not be deleted: " + completion.Outcome.FilesDeleteError
+		a.status += tr("t.local_files_could_not") + completion.Outcome.FilesDeleteError
 	} else if completion.Outcome.FilesDeleted {
-		a.status += "; local Workshop files deleted"
+		a.status += tr("t.local_workshop_files_deleted")
 	}
 	a.normalizeModSelections()
 	invalidateWindow(a.hwnd)
@@ -792,7 +792,7 @@ func (a *application) startWorkshopSupportScan(force bool) {
 		return
 	}
 	a.workshopSupportBusy = true
-	a.status = fmt.Sprintf("Checking Workshop support status for %d item(s)…", len(ids))
+	a.status = fmt.Sprintf(tr("t.checking_workshop_support_status"), len(ids))
 	hwnd := a.hwnd
 	go func() {
 		completion := scanWorkshopSupport(ids)
@@ -825,7 +825,7 @@ func (a *application) finishWorkshopSupportScan() {
 		}
 	}
 	a.normalizeModSelections()
-	a.status = fmt.Sprintf("Workshop support check complete: %d item(s) checked, %d need attention", completion.Checked, needsAttention)
+	a.status = fmt.Sprintf(tr("t.workshop_support_check_complete"), completion.Checked, needsAttention)
 	invalidateWindow(a.hwnd)
 }
 
@@ -857,7 +857,7 @@ func (a *application) startWorkshopUpdateScan() {
 		return
 	}
 	a.workshopUpdateBusy = true
-	a.status = fmt.Sprintf("Scanning %d Workshop item(s) for newer published revisions…", len(ids))
+	a.status = fmt.Sprintf(tr("t.scanning_d_workshop_item"), len(ids))
 	hwnd, gamePath := a.hwnd, a.cfg.GamePath
 	go func() {
 		completion := scanWorkshopUpdates(gamePath, ids)
@@ -886,7 +886,7 @@ func (a *application) finishWorkshopUpdateScan() {
 		}
 	}
 	a.normalizeModSelections()
-	a.status = fmt.Sprintf("Workshop update scan complete: %d checked • %d current • %d update available • %d potentially stale • %d missing/unknown", completion.Checked, completion.Current, completion.Update, completion.Stale, completion.Missing+completion.Unknown)
+	a.status = fmt.Sprintf(tr("t.workshop_update_scan_complete"), completion.Checked, completion.Current, completion.Update, completion.Stale, completion.Missing+completion.Unknown)
 	invalidateWindow(a.hwnd)
 }
 
@@ -899,13 +899,13 @@ func (a *application) requestWorkshopForceUpdateByID(id, fallbackName string) {
 		name = item.Name
 	}
 	if name == "" {
-		name = "Workshop Item " + id
+		name = tr("t.workshop_item") + id
 	}
 	a.workshopForceUpdateID = id
 	a.workshopForceUpdateName = name
 	a.workshopForceUpdateModal = true
 	a.modSearchFocus = false
-	a.status = "Confirm Workshop force update"
+	a.status = tr("t.confirm_workshop_force_update")
 	invalidateWindow(a.hwnd)
 }
 
@@ -921,7 +921,7 @@ func (a *application) cancelWorkshopForceUpdate() {
 	a.workshopForceUpdateModal = false
 	a.workshopForceUpdateID = ""
 	a.workshopForceUpdateName = ""
-	a.status = "Workshop force update cancelled"
+	a.status = tr("t.workshop_force_update_cancelled")
 	invalidateWindow(a.hwnd)
 }
 
@@ -932,7 +932,7 @@ func (a *application) beginWorkshopForceUpdate() {
 	id, name, gamePath, hwnd := a.workshopForceUpdateID, a.workshopForceUpdateName, a.cfg.GamePath, a.hwnd
 	a.workshopForceUpdateModal = false
 	a.workshopActionBusy = true
-	a.status = "Force-updating Steam Workshop item " + name + "…"
+	a.status = tr("t.force_updating_steam_workshop") + name + "…"
 	appendLauncherLog(a.logPath, "Workshop force update BEGIN: %s (%s)", name, id)
 	invalidateWindow(a.hwnd)
 	go func() {
@@ -960,10 +960,10 @@ func (a *application) finishWorkshopForceUpdate() {
 			a.workshopUpdateCache = map[string]WorkshopUpdateRecord{}
 		}
 		state := "unknown"
-		reason := "Steam reinstall requested; rescan after the download completes"
+		reason := tr("t.steam_reinstall_requested_rescan")
 		if completion.Outcome.Downloading || completion.Outcome.DownloadRequested {
 			state = "downloading"
-			reason = "Steam reinstall is queued/downloading after a forced resubscribe"
+			reason = tr("t.steam_reinstall_is_queued")
 		}
 		a.workshopUpdateCache[completion.ID] = WorkshopUpdateRecord{State: state, Reason: reason, CheckedUnix: time.Now().Unix()}
 		saveWorkshopUpdateCache(a.knowledgeRoot, a.workshopUpdateCache)
@@ -977,7 +977,7 @@ func (a *application) finishWorkshopForceUpdate() {
 	if completion.Outcome.Message != "" {
 		a.status = completion.Name + ": " + completion.Outcome.Message
 	} else {
-		a.status = completion.Name + ": Workshop force update finished"
+		a.status = completion.Name + tr("t.workshop_force_update_finished")
 	}
 	invalidateWindow(a.hwnd)
 }
@@ -1029,7 +1029,7 @@ func (a *application) handleAction(id string) {
 		_, _ = fmt.Sscanf(id, "nav:%d", &page)
 		a.page = page
 		a.playlistDropdown = false
-		a.status = "Ready"
+		a.status = tr("status.ready")
 		invalidateWindow(a.hwnd)
 		return
 	}
@@ -1058,7 +1058,7 @@ func (a *application) handleAction(id string) {
 		profile := launchProfileByID(normalizeLaunchProfile(profileID))
 		a.cfg.LaunchProfile = string(profile.ID)
 		_ = saveConfig(a.configPath, a.cfg)
-		a.status = "Launch profile selected: " + profile.Name
+		a.status = tr("t.launch_profile_selected") + profile.Name
 		invalidateWindow(a.hwnd)
 		return
 	}
@@ -1077,11 +1077,11 @@ func (a *application) handleAction(id string) {
 		a.normalizeModSelections()
 		switch a.modView {
 		case 1:
-			a.status = "Workshop mods"
+			a.status = tr("t.workshop_mods")
 		case 2:
-			a.status = "Development mods from media_soviet\\workshop_wip"
+			a.status = tr("t.development_mods_from_media")
 		default:
-			a.status = "Plugins"
+			a.status = tr("t.plugins")
 		}
 		if (a.modView == 1 && a.cfg.WorkshopNeedsAttentionOnly) || (a.modView == 0 && a.cfg.PluginNeedsAttentionOnly) {
 			a.startWorkshopSupportScan(false)
@@ -1109,7 +1109,7 @@ func (a *application) handleAction(id string) {
 			item := &a.workshopItems[index]
 			next := !item.Enabled
 			a.setHybridWorkshopEnabled(item.ID, next)
-			a.status = item.Name + " " + map[bool]string{true: "enabled with linked Workshop plugin(s)", false: "disabled with linked Workshop plugin(s)"}[next]
+			a.status = item.Name + " " + map[bool]string{true: tr("t.enabled_with_linked_workshop"), false: tr("t.disabled_with_linked_workshop")}[next]
 		}
 		invalidateWindow(a.hwnd)
 		return
@@ -1134,7 +1134,7 @@ func (a *application) handleAction(id string) {
 			item := &a.developmentItems[index]
 			next := !item.Enabled
 			a.setDevelopmentEnabled(item.ID, next)
-			a.status = item.Name + " " + map[bool]string{true: "enabled for local development testing", false: "disabled for local development testing"}[next]
+			a.status = item.Name + " " + map[bool]string{true: tr("t.enabled_for_local_development"), false: tr("t.disabled_for_local_development")}[next]
 		}
 		invalidateWindow(a.hwnd)
 		return
@@ -1152,18 +1152,18 @@ func (a *application) handleAction(id string) {
 				a.releasePluginImage()
 				now := time.Now()
 				if a.invalidClickPlugin == index && now.Sub(a.invalidClickAt) <= 2*time.Second {
-					a.showToast("Detected plugin is invalid — see Plugin Details", 2400*time.Millisecond)
+					a.showToast(tr("t.detected_plugin_is_invalid"), 2400*time.Millisecond)
 				}
 				a.invalidClickPlugin = index
 				a.invalidClickAt = now
-				a.status = "Detected plugin is invalid — see Plugin Details"
+				a.status = tr("t.detected_plugin_is_invalid")
 				invalidateWindow(a.hwnd)
 				return
 			}
 			next := !p.Setting.Enabled
 			if p.WorkshopID != "" {
 				a.setHybridWorkshopEnabled(p.WorkshopID, next)
-				a.status = p.Manifest.Name + " " + map[bool]string{true: "enabled with Workshop item " + p.WorkshopID, false: "disabled with Workshop item " + p.WorkshopID}[next]
+				a.status = p.Manifest.Name + " " + map[bool]string{true: tr("t.enabled_with_workshop_item") + p.WorkshopID, false: tr("t.disabled_with_workshop_item") + p.WorkshopID}[next]
 			} else {
 				p.Setting.Enabled = next
 				if !p.Setting.Enabled {
@@ -1183,9 +1183,9 @@ func (a *application) handleAction(id string) {
 	case "copy-build-sha":
 		if a.game != nil && a.game.SHA256 != "" {
 			if err := copyTextToClipboard(a.hwnd, a.game.SHA256); err != nil {
-				a.status = "Could not copy Build SHA: " + err.Error()
+				a.status = tr("t.could_not_copy_build") + err.Error()
 			} else {
-				a.status = "Build SHA copied to clipboard"
+				a.status = tr("t.build_sha_copied_to")
 			}
 		}
 	case "playlist-dropdown":
@@ -1199,10 +1199,10 @@ func (a *application) handleAction(id string) {
 	case "playlist-import":
 		a.playlistImportModal = true
 		a.playlistDropdown = false
-		a.status = "Choose a playlist JSON or drag it into the import window"
+		a.status = tr("t.choose_a_playlist_json")
 	case "playlist-import-cancel":
 		a.playlistImportModal = false
-		a.status = "Playlist import cancelled"
+		a.status = tr("t.playlist_import_cancelled")
 	case "playlist-import-browse":
 		initial := filepath.Join(a.baseDir, "Exports")
 		if path := openPlaylistDialog(a.hwnd, initial); path != "" {
@@ -1213,29 +1213,29 @@ func (a *application) handleAction(id string) {
 	case "playlist-delete-cancel":
 		a.playlistDeleteModal = false
 		a.playlistDeleteName = ""
-		a.status = "Playlist deletion cancelled"
+		a.status = tr("t.playlist_deletion_cancelled")
 	case "playlist-delete-confirm":
 		a.confirmDeleteSelectedPlaylist()
 	case "playlist-modal-cancel":
 		a.playlistModal = false
 		a.playlistModalMode = ""
 		a.playlistDraft = ""
-		a.status = "Playlist save cancelled"
+		a.status = tr("t.playlist_save_cancelled")
 	case "playlist-modal-save":
 		a.savePlaylistDraft()
 	case "mod-enable-all":
 		if a.modView == 1 {
 			enable := !a.allWorkshopEnabled()
 			a.setAllWorkshop(enable)
-			a.status = map[bool]string{true: "All Workshop mods enabled for the current RML configuration", false: "All Workshop mods disabled for the current RML configuration"}[enable]
+			a.status = map[bool]string{true: tr("t.all_workshop_mods_enabled"), false: tr("t.all_workshop_mods_disabled")}[enable]
 		} else if a.modView == 2 {
 			enable := !a.allDevelopmentEnabled()
 			a.setAllDevelopment(enable)
-			a.status = map[bool]string{true: "All Development mods enabled for local testing", false: "All Development mods disabled for local testing"}[enable]
+			a.status = map[bool]string{true: tr("t.all_development_mods_enabled"), false: tr("t.all_development_mods_disabled")}[enable]
 		} else {
 			enable := !a.allPluginsEnabled()
 			a.setAllPlugins(enable)
-			a.status = map[bool]string{true: "All plugins enabled", false: "All plugins disabled"}[enable]
+			a.status = map[bool]string{true: tr("t.all_plugins_enabled"), false: tr("t.all_plugins_disabled")}[enable]
 		}
 	case "mod-hide-disabled":
 		if a.modView == 1 {
@@ -1275,7 +1275,7 @@ func (a *application) handleAction(id string) {
 		}
 	case "mod-search":
 		a.modSearchFocus = true
-		a.status = "Search filters this Mod list as you type"
+		a.status = tr("status.search_hint")
 	case "mod-search-clear":
 		a.clearModSearch()
 		a.modSearchFocus = true
@@ -1305,7 +1305,7 @@ func (a *application) handleAction(id string) {
 		a.chooseGame()
 	case "refresh":
 		a.refresh(true)
-		a.status = "Plugins, Workshop, Development mods and diagnostics refreshed"
+		a.status = tr("t.plugins_workshop_development_mods")
 		if (a.modView == 1 && a.cfg.WorkshopNeedsAttentionOnly) || (a.modView == 0 && a.cfg.PluginNeedsAttentionOnly) {
 			a.startWorkshopSupportScan(true)
 		}
@@ -1319,9 +1319,9 @@ func (a *application) handleAction(id string) {
 		}
 		a.refresh(true)
 		if a.cfg.AutoOrder {
-			a.status = "Automatic dependency ordering enabled"
+			a.status = tr("t.automatic_dependency_ordering_enable")
 		} else {
-			a.status = "Manual priority ordering enabled"
+			a.status = tr("t.manual_priority_ordering_enabled")
 		}
 	case "reset":
 		a.resetRecommended()
@@ -1329,34 +1329,34 @@ func (a *application) handleAction(id string) {
 		if p := a.selectedPlugin(); p != nil && p.Setting.Enabled {
 			p.Setting.Force = !p.Setting.Force
 			a.savePlugin(p)
-			a.status = "Force-load policy updated for " + p.Manifest.Name
+			a.status = tr("t.force_load_policy_updated") + p.Manifest.Name
 		}
 	case "priority-minus":
 		if p := a.selectedPlugin(); p != nil {
 			p.Setting.Priority -= 10
 			a.savePlugin(p)
-			a.status = "Priority updated"
+			a.status = tr("t.priority_updated")
 		}
 	case "priority-plus":
 		if p := a.selectedPlugin(); p != nil {
 			p.Setting.Priority += 10
 			a.savePlugin(p)
-			a.status = "Priority updated"
+			a.status = tr("t.priority_updated")
 		}
 	case "verbose-diagnostics":
 		a.cfg.VerboseDiagnostics = !a.cfg.VerboseDiagnostics
 		if a.cfg.VerboseDiagnostics {
 			a.cfg.LaunchProfile = string(profileDeepTest)
-			a.status = "Detailed Diagnostic Logging enabled"
+			a.status = tr("t.detailed_diagnostic_logging_enabled")
 		} else {
 			a.cfg.LaunchProfile = string(profileNormal)
-			a.status = "Detailed Diagnostic Logging disabled"
+			a.status = tr("t.detailed_diagnostic_logging_disabled")
 		}
 		_ = saveConfig(a.configPath, a.cfg)
 	case "auto-crash-archives":
 		a.cfg.AutoCrashArchives = !a.cfg.AutoCrashArchives
 		_ = saveConfig(a.configPath, a.cfg)
-		a.status = map[bool]string{true: "Automatic crash archives enabled", false: "Automatic crash archives disabled"}[a.cfg.AutoCrashArchives]
+		a.status = map[bool]string{true: tr("t.automatic_crash_archives_enabled"), false: tr("t.automatic_crash_archives_disabled")}[a.cfg.AutoCrashArchives]
 	case "close-after":
 		a.cfg.CloseAfterLaunch = !a.cfg.CloseAfterLaunch
 		_ = saveConfig(a.configPath, a.cfg)
@@ -1369,13 +1369,13 @@ func (a *application) handleAction(id string) {
 		if p := latestVerboseDiagnostic(a.baseDir); p != "" {
 			openPath(p)
 		} else {
-			a.status = "No detailed diagnostic log has been produced yet"
+			a.status = tr("t.no_detailed_diagnostic_log")
 		}
 	case "create-support-archive":
 		if p, err := createSupportArchive(a.baseDir, "manual support archive"); err != nil {
-			a.status = "Could not create support archive: " + err.Error()
+			a.status = tr("t.could_not_create_support") + err.Error()
 		} else {
-			a.status = "Support archive created: " + p
+			a.status = tr("t.support_archive_created") + p
 		}
 	case "open-crash-folder":
 		_ = os.MkdirAll(crashArchiveDir(a.baseDir), 0o755)
@@ -1394,12 +1394,12 @@ func (a *application) handleAction(id string) {
 		if p := a.selectedPlugin(); p != nil {
 			if p.SettingsPath != "" {
 				openPath(p.SettingsPath)
-				a.status = "Opened plugin settings: " + filepath.Base(p.SettingsPath)
+				a.status = tr("t.opened_plugin_settings") + filepath.Base(p.SettingsPath)
 			} else if p.SettingsCount > 1 && p.SettingsDir != "" {
 				openPath(p.SettingsDir)
-				a.status = fmt.Sprintf("Multiple plugin INI files found; opened settings folder (%d candidates)", p.SettingsCount)
+				a.status = fmt.Sprintf(tr("t.multiple_plugin_ini_files"), p.SettingsCount)
 			} else {
-				a.status = "No editable plugin INI/settings file was found beside this DLL"
+				a.status = tr("t.no_editable_plugin_ini")
 			}
 		}
 	case "plugin-workshop-open-page":

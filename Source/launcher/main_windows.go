@@ -110,7 +110,7 @@ func windowProc(hwnd uintptr, message uint32, wparam, lparam uintptr) uintptr {
 			if path != "" && strings.EqualFold(filepath.Ext(path), ".json") {
 				app.importPlaylistFile(path)
 			} else if path != "" {
-				app.status = "Playlist import requires a JSON file"
+				app.status = tr("t.playlist_import_requires_a")
 			}
 			invalidateWindow(hwnd)
 		} else {
@@ -315,13 +315,13 @@ func windowProc(hwnd uintptr, message uint32, wparam, lparam uintptr) uintptr {
 		if app != nil {
 			code := uint32(wparam)
 			wasDeep := normalizeLaunchProfile(app.cfg.LaunchProfile) == profileDeepTest
-			app.status = fmt.Sprintf("WRSR exited with code 0x%X; behaviour journal merged", code)
+			app.status = fmt.Sprintf(tr("t.wrsr_exited_with_code"), code)
 			app.refresh(false)
 			if wasDeep && app.lastSessionID != "" {
 				diag := diagnosticLogPath(app.baseDir, profileDeepTest, app.lastSessionID)
 				appendDiagnosticFileSection(diag, "COMPATIBILITY REPORT JSON", filepath.Join(app.baseDir, "rml", "state", "last_compatibility_report.json"))
 				setLauncherDiagnosticMirror("")
-				app.status = fmt.Sprintf("Detailed diagnostic session finished (exit 0x%X) — detailed log finalized", code)
+				app.status = fmt.Sprintf(tr("t.detailed_diagnostic_session_finished"), code)
 			}
 			if wasDeep && app.deepPreviousProfile != "" {
 				app.cfg.LaunchProfile = string(app.deepPreviousProfile)
@@ -394,7 +394,7 @@ func runGUI() error {
 	activeApp = newApplication(base)
 	appendLauncherLog(activeApp.logPath, "launcher executable=%s runtime root=%s resolution=%s", exe, base, runtimeRootMode)
 	if runtimeRootMode == "workshop-fallback" {
-		activeApp.status = "Using Republic Mod Loader runtime files from the subscribed Workshop installation"
+		activeApp.status = tr("t.using_republic_mod_loader")
 	}
 
 	instance, _, callErr := procGetModuleHandleW.Call(0)
@@ -402,7 +402,7 @@ func runGUI() error {
 		return fmt.Errorf("GetModuleHandleW: %v", callErr)
 	}
 	className := utf16Ptr("RepublicModLoaderWindowClass")
-	title := utf16Ptr("Republic Mod Loader")
+	title := utf16Ptr(tr("app.title"))
 	cursor, _, _ := procLoadCursorW.Call(0, idcArrow)
 	// Resource ID 1 is the packaged multi-resolution RML icon. Fall back to
 	// the stock application icon only if the resource is unavailable.
@@ -460,6 +460,6 @@ func runGUI() error {
 
 func main() {
 	if err := runGUI(); err != nil {
-		showFatalMessage("Republic Mod Loader", err.Error())
+		showFatalMessage(tr("app.title"), err.Error())
 	}
 }
