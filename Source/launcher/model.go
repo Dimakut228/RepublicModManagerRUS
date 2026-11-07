@@ -97,6 +97,12 @@ type AppConfig struct {
 	WorkshopNeedsAttentionOnly bool                     `json:"workshopNeedsAttentionOnly,omitempty"`
 	VerboseDiagnostics         bool                     `json:"verboseDiagnostics,omitempty"`
 	AutoCrashArchives          bool                     `json:"autoCrashArchives"`
+	Language                   string                   `json:"language,omitempty"`
+	AutoTranslate              bool                     `json:"autoTranslateDescriptions"`
+	TranslationNoticeShown     bool                     `json:"translationNoticeShown,omitempty"`
+	CatalogSort                string                   `json:"catalogSort,omitempty"`
+	CatalogPeriod              string                   `json:"catalogPeriod,omitempty"`
+	CatalogShowIncompatible    bool                     `json:"catalogShowIncompatible,omitempty"`
 }
 
 type Plugin struct {
@@ -226,6 +232,24 @@ func defaultConfig() AppConfig {
 		DefaultDevelopmentSettings: map[string]bool{},
 		DefaultAutoOrder:           true,
 		AutoCrashArchives:          true,
+		Language:                   "auto",
+		AutoTranslate:              true,
+		CatalogSort:                catalogSortTrend,
+	}
+}
+
+const (
+	catalogSortTrend    = "trend"
+	catalogSortRecent   = "mostrecent"
+	catalogSortTopRated = "toprated"
+)
+
+func normalizeCatalogSort(value string) string {
+	switch value {
+	case catalogSortTrend, catalogSortRecent, catalogSortTopRated, "": // "" = UI default for the current tab
+		return value
+	default:
+		return catalogSortTrend
 	}
 }
 
@@ -395,6 +419,7 @@ func loadConfig(path string) AppConfig {
 		}
 	}
 	cfg.LaunchProfile = string(normalizeLaunchProfile(cfg.LaunchProfile))
+	cfg.CatalogSort = normalizeCatalogSort(cfg.CatalogSort)
 	if cfg.LaunchProfile == string(profileDeepTest) {
 		cfg.VerboseDiagnostics = true
 	}

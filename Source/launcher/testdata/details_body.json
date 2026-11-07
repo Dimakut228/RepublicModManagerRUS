@@ -1,0 +1,119 @@
+{
+  "response": {
+    "result": 1,
+    "resultcount": 3,
+    "publishedfiledetails": [
+      {
+        "publishedfileid": "3831575284",
+        "result": 1,
+        "creator": "76561199424182639",
+        "creator_app_id": 784150,
+        "consumer_app_id": 784150,
+        "filename": "",
+        "file_size": "119020781",
+        "file_url": "",
+        "hcontent_file": "3129865547367475592",
+        "preview_url": "https://images.steamusercontent.com/ugc/15781460157610338507/F17CDE0EE376F7CB6E8FA45DD2F3EAA1CDF25C77/",
+        "hcontent_preview": "15781460157610338507",
+        "title": "Historic Samara 2 — 12 buildings",
+        "description": "[img]https://images.steamusercontent.com/ugc/14783242143448881515/7E649188A839034944A2ABB2F47EAE25613A7A2C/[/img]\r\n\r\n[h1]Historic Samara 2[/h1]\r\n[hr][/hr]\r\nBring the atmosphere of old Samara to your republic.\r\n\r\nMerchant houses with decorative stucco, red-brick façades and historic shopfronts bring the character of the old city to your streets. The residential buildings are joined by a pelmeni restaurant on Frunze Street, Furor Cinema and the wooden Church of St Mitrofan of Voronezh.\r\n\r\nThis second collection includes 12 buildings for Workers & Resources: Soviet Republic: 9 residential houses for 408 residents, a restaurant, a cinema and a church.\r\n\r\n[h1]Residential buildings[/h1]\r\n[list]\r\n[*]House with a Doughnut Shop at 101 Frunze Street - 16 residents. Housing quality: 88%.\r\n[*]Historic House at 95 Kuybysheva Street - 96 residents. Housing quality: 89%.\r\n[*]House at 68 Kuybysheva Street - 96 residents. Housing quality: 88%.\r\n[*]House with a Tobacco Shop at 94 Kuybysheva Street - 24 residents. Housing quality: 89%.\r\n[*]House at 82 Molodogvardeyskaya Street - 24 residents. Housing quality: 89%.\r\n[*]House at 85 Sadovaya Street - 48 residents. Housing quality: 89%.\r\n[*]House at 71 Lev Tolstoy Street - 16 residents. Housing quality: 88%.\r\n[*]House at 83 Lev Tolstoy Street - 48 residents. Housing quality: 88%.\r\n[*]Corner House at 35 Ventseka Street / 53 Stepana Razina Street - 40 residents. Housing quality: 84%.\r\n[/list]\r\n\r\n[h1]Restaurant, cinema and church[/h1]\r\n[list]\r\n[*]Historic Pelmeni Restaurant at 103 Frunze Street - 5 jobs; capacity: 30 visitors.\r\n[*]Furor Cinema at 231 Sadovaya Street - 15 jobs; capacity: 120 visitors. Base rating: 3.2.\r\n[*]Church of St Mitrofan of Voronezh - 4 jobs: 2 workers and 2 university-educated specialists; capacity: 120 visitors.\r\n[/list]\r\n[hr][/hr]\r\nCreated by Mark Grayson.",
+        "time_created": 1793533610,
+        "time_updated": 1793928176,
+        "visibility": 0,
+        "banned": 0,
+        "ban_reason": "",
+        "subscriptions": 1486,
+        "favorited": 79,
+        "lifetime_subscriptions": 1564,
+        "lifetime_favorited": 79,
+        "views": 3452,
+        "tags": [
+          {
+            "tag": "Building"
+          },
+          {
+            "tag": "Residential"
+          },
+          {
+            "tag": "Citizen facility"
+          },
+          {
+            "tag": "Tourism"
+          }
+        ]
+      },
+      {
+        "publishedfileid": "3833667926",
+        "result": 1,
+        "creator": "76561198047036177",
+        "creator_app_id": 784150,
+        "consumer_app_id": 784150,
+        "filename": "",
+        "file_size": "32170629",
+        "file_url": "",
+        "hcontent_file": "5557521399847274518",
+        "preview_url": "https://images.steamusercontent.com/ugc/10821997251461743214/C61259A434A8F409C9EF5E3606F8ECB122F46CF8/",
+        "hcontent_preview": "10821997251461743214",
+        "title": "Metrostroy rail borer - Early start 1934",
+        "description": "Early Start Metrostroy Rail Borer\n\nThe Metrostroy Rail Borer is a Soviet railway mounted tunneling machine used during the construction of the Moscow Metro.\n\nFor gameplay balance, this mod features 50% of the working performance of the vanilla rail borer, offering an early start, slower approach to tunnel construction.\n\nIn-Game Specifications:\n\nYeah: 1934\n\nMaximum Speed: 30 km/h\n\nWorking Speed: 130\n\nWorking Performance: 50% of the vanilla rail borer",
+        "time_created": 1793809733,
+        "time_updated": 1793873841,
+        "visibility": 0,
+        "banned": 0,
+        "ban_reason": "",
+        "subscriptions": 904,
+        "favorited": 47,
+        "lifetime_subscriptions": 933,
+        "lifetime_favorited": 47,
+        "views": 2283,
+        "tags": [
+          {
+            "tag": "Vehicle"
+          },
+          {
+            "tag": "Track builder"
+          }
+        ]
+      },
+      {
+        "publishedfileid": "3834389293",
+        "result": 1,
+        "creator": "76561198413274718",
+        "creator_app_id": 784150,
+        "consumer_app_id": 784150,
+        "filename": "",
+        "file_size": "24606278",
+        "file_url": "",
+        "hcontent_file": "598154544963135820",
+        "preview_url": "https://images.steamusercontent.com/ugc/12147022342213362089/475FAD8C74771F82C03AEA2B9DA036B0E83114C4/",
+        "hcontent_preview": "12147022342213362089",
+        "title": "Kaengsaeng 68",
+        "description": "The Kaengsaeng 68 is a copy of the Soviet GAZ-69 produced in North Korea. The Kaengsaeng 68 served as the main light off-road vehicle of the Korean People's Army for decades as well as being used for various civilian purposes. In addition to the basic 2 and 4 door bodies, truck versions have also been produced. Mechanically it is similar to the GAZ-69, with the major difference being a simplified drivetrain, completely omitting the driven front axle. \n\n[img]https://i.imgur.com/ZxR4kiP.jpeg[/img]\n\n[h3]Specs[/h3]\n[table]\n    [tr]\n        [td]Top Speed[/td]\n        [td]95 Km/H[/td]\n    [/tr]\n    [tr]\n        [td]Weight[/td]\n        [td]1.5 T[/td]\n    [/tr]\n [tr]\n        [td]Power[/td]\n        [td]48 KW[/td]\n    [/tr]\n[tr]\n        [td]Availability[/td]\n        [td]1961-1985[/td]\n    [/tr]\n[/table] \n\n[h3]Features[/h3]\n[*]High poly model and 2 LoD\n[*]Various skins\n[*]4 door, 2 door, open hull, covered hull, police and ambulance versions\n[/list]\n\nIf you find any bugs or errors, please let me know and I'll do my best to fix them.\nEnjoy :>",
+        "time_created": 1793917162,
+        "time_updated": 1793919976,
+        "visibility": 0,
+        "banned": 0,
+        "ban_reason": "",
+        "subscriptions": 367,
+        "favorited": 17,
+        "lifetime_subscriptions": 379,
+        "lifetime_favorited": 19,
+        "views": 817,
+        "tags": [
+          {
+            "tag": "Vehicle"
+          },
+          {
+            "tag": "Personal car"
+          },
+          {
+            "tag": "Cargo road vehicle"
+          },
+          {
+            "tag": "Service road vehicle"
+          }
+        ]
+      }
+    ]
+  }
+}

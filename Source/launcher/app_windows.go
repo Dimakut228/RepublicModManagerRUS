@@ -184,6 +184,9 @@ func newApplication(base string) *application {
 	// consistently at every DPI. Failure falls back to the built-in geometric mark.
 	app.brandImage = loadGDIPlusImage(filepath.Join(base, "rml", "assets", "brand_logo.png"))
 	app.cfg = loadConfig(app.configPath)
+	if err := initLocale(app.cfg.Language); err != nil {
+		appendLauncherLog(app.logPath, "Locale: %v", err)
+	}
 	app.workshopSupportCache = loadWorkshopSupportCache(app.knowledgeRoot)
 	app.workshopUpdateCache = loadWorkshopUpdateCache(app.knowledgeRoot)
 	// The currently selected playlist is authoritative across launcher restarts.
