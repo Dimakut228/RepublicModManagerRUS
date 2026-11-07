@@ -66,6 +66,9 @@ func renderApplication(app *application, dc uintptr, width, height int) {
 	if app.workshopForceUpdateModal {
 		drawWorkshopForceUpdateModal(c)
 	}
+	if app.settingsModal {
+		drawSettingsModal(c)
+	}
 	if app.tooltipText != "" {
 		drawGenericTooltip(c, app.tooltipText)
 	}
@@ -358,6 +361,36 @@ func drawStatusBar(c *canvas, x, y, w, h int) {	c.fillRect(x, y, w, h, palette.S
 	c.text(right, x+w-c.s(255), y, c.s(230), h, fonts.Tiny, palette.TextFaint, dtRight|dtVCenter|dtSingleLine)
 }
 
+func drawSettingsModal(c *canvas) {
+	// Dim the application behind a compact launcher-owned settings dialog.
+	c.fillRect(0, 0, c.width, c.height, rgb(8, 11, 16))
+	w, h := c.s(520), c.s(360)
+	x, y := (c.width-w)/2, (c.height-h)/2
+	c.roundedRect(x, y, w, h, c.s(16), palette.Surface, palette.BorderBright)
+	c.label(tr("settings.modal.kicker"), x+c.s(24), y+c.s(20), w-c.s(48), palette.AccentBright)
+	c.text(tr("settings.modal.title"), x+c.s(24), y+c.s(43), w-c.s(48), c.s(34), fonts.Heading, palette.Text, dtLeft|dtVCenter|dtSingleLine)
+
+	rowY := y + c.s(96)
+	c.text(tr("settings.language.label"), x+c.s(24), rowY, c.s(240), c.s(28), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+	languageValue := tr("settings.language." + c.app.cfg.Language)
+	if languageValue == "settings.language."+c.app.cfg.Language {
+		languageValue = tr("settings.language.auto")
+	}
+	c.compactButton("settings-language-cycle", languageValue, x+w-c.s(220), rowY, c.s(196), c.s(36))
+	c.addHit("settings-language-cycle", x+w-c.s(220), rowY, c.s(196), c.s(36))
+
+	rowY += c.s(52)
+	c.text(tr("settings.autotranslate.label"), x+c.s(24), rowY, w-c.s(96), c.s(23), fonts.Tiny, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+	c.toggle("settings-translate-toggle", c.app.cfg.AutoTranslate, x+w-c.s(66), rowY)
+
+	rowY += c.s(52)
+	c.compactButton("settings-clear-translations", tr("settings.clear.translations"), x+c.s(24), rowY, c.s(224), c.s(36))
+	c.compactButton("settings-clear-catalog", tr("settings.clear.catalog"), x+w-c.s(248), rowY, c.s(224), c.s(36))
+
+	c.compactButton("settings-close", tr("t.cancel"), x+c.s(24), y+h-c.s(52), c.s(96), c.s(34))
+	c.button("settings-apply", tr("settings.close.btn"), x+w-c.s(116), y+h-c.s(54), c.s(92), c.s(34), true)
+}
+
 func drawWorkshopForceUpdateModal(c *canvas) {
 	c.fillRect(0, 0, c.width, c.height, rgb(8, 11, 16))
 	w, h := c.s(560), c.s(268)
@@ -542,6 +575,10 @@ func drawDashboardPlaylistCard(c *canvas, x, y, w, h int) {
 func drawDashboardSettingsCard(c *canvas, x, y, w, h int) {
 	c.card(x, y, w, h)
 	c.label(tr("dashboard.settings.label"), x+c.s(18), y+c.s(15), w-c.s(36), palette.TextMuted)
+	gearX := x + w - c.s(44)
+	c.circle(gearX, y+c.s(21), c.s(14), palette.SurfaceRaised, palette.Border)
+	c.text("⚙", gearX-c.s(8), y+c.s(7), c.s(16), c.s(28), fonts.SmallStrong, palette.TextMuted, dtCenter|dtVCenter|dtSingleLine)
+	c.addHit("settings-open", gearX-c.s(14), y+c.s(7), c.s(28), c.s(28))
 	c.text(tr("dashboard.settings.title"), x+c.s(18), y+c.s(36), w-c.s(36), c.s(25), fonts.Title, palette.Text, dtLeft|dtVCenter|dtSingleLine|dtEndEllipsis)
 
 	rows := []struct {

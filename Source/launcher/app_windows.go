@@ -144,6 +144,7 @@ type application struct {
 	playlistDropdown    bool
 	playlistDeleteModal bool
 	playlistDeleteName  string
+	settingsModal       bool
 	playlistDropX       int
 	playlistDropY       int
 	playlistDropW       int
@@ -1188,6 +1189,48 @@ func (a *application) handleAction(id string) {
 				a.status = tr("t.build_sha_copied_to")
 			}
 		}
+	case "settings-open":
+		a.settingsModal = true
+		a.status = tr("settings.open.hint")
+	case "settings-close":
+		a.settingsModal = false
+		a.status = tr("t.settings_closed")
+	case "settings-language-auto":
+		applyLanguageSetting(a, localeAuto)
+		a.status = tr("t.language_selected_auto")
+	case "settings-language-ru":
+		applyLanguageSetting(a, localeRussian)
+		a.status = tr("t.language_selected_ru")
+	case "settings-language-en":
+		applyLanguageSetting(a, localeEnglish)
+		a.status = tr("t.language_selected_en")
+	case "settings-language-cycle":
+		order := availableLocaleCodes()
+		current := a.cfg.Language
+		nextIdx := 0
+		for i, code := range order {
+			if code == current {
+				nextIdx = (i + 1) % len(order)
+				break
+			}
+		}
+		next := order[nextIdx]
+		applyLanguageSetting(a, next)
+		a.status = tr("t.language_selected_"+next)
+	case "settings-translate-toggle":
+		a.cfg.AutoTranslate = !a.cfg.AutoTranslate
+		_ = saveConfig(a.configPath, a.cfg)
+		if a.cfg.AutoTranslate {
+			a.status = tr("t.autotranslate_enabled")
+		} else {
+			a.status = tr("t.autotranslate_disabled")
+		}
+	case "settings-clear-translations":
+		clearTranslationCache(a.knowledgeRoot)
+		a.status = tr("t.cleared_translations_cache")
+	case "settings-clear-catalog":
+		clearCatalogCache(a.knowledgeRoot)
+		a.status = tr("t.cleared_catalog_cache")
 	case "playlist-dropdown":
 		a.playlistDropdown = !a.playlistDropdown
 	case "playlist-save":

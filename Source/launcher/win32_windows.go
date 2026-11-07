@@ -190,6 +190,7 @@ var (
 	procSetTimer                      = user32.NewProc("SetTimer")
 	procKillTimer                     = user32.NewProc("KillTimer")
 	procSetWindowPos                  = user32.NewProc("SetWindowPos")
+	procSetWindowTextW                = user32.NewProc("SetWindowTextW")
 	procGetDpiForWindow               = user32.NewProc("GetDpiForWindow")
 	procSetProcessDpiAwarenessContext = user32.NewProc("SetProcessDpiAwarenessContext")
 	procLoadCursorW                   = user32.NewProc("LoadCursorW")
