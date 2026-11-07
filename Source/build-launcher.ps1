@@ -20,6 +20,7 @@ python (Join-Path $Root 'tools\pe_resources.py') $Out `
     --icon (Join-Path $Root 'assets\RepublicModManagerRUS.ico') `
     --version $Version `
     --file-description 'Republic Mod manager V 1.0 RUS' `
+    --product-name 'Republic Mod manager V 1.0 RUS' `
     --original-filename 'RepublicModManagerRUS.exe'
 python (Join-Path $Root 'tools\pe_finalize.py') $Out
 Write-Host "Built Republic Mod manager V 1.0 RUS v$Version at $Out"

@@ -432,22 +432,44 @@ type detailsResponse struct {
 }
 
 type detailsRow struct {
-	PublishedFileID  string `json:"publishedfileid"`
-	Title            string `json:"title"`
-	ShortDescription string `json:"short_description"`
-	TimeCreated      int64  `json:"time_created"`
-	TimeUpdated      int64  `json:"time_updated"`
-	Subscriptions    int    `json:"subscriptions"`
-	Favorited        int    `json:"favorited"`
-	Views            int    `json:"views"`
-	FileSize         int64  `json:"file_size"`
-	PreviewURL       string `json:"preview_url"`
-	Creator          string `json:"creator"`
-	Visibility       int    `json:"visibility"`
-	Banned           bool   `json:"banned"`
+	PublishedFileID  string    `json:"publishedfileid"`
+	Title            string    `json:"title"`
+	ShortDescription string    `json:"short_description"`
+	TimeCreated      flexInt64 `json:"time_created"`
+	TimeUpdated      flexInt64 `json:"time_updated"`
+	Subscriptions    flexInt64 `json:"subscriptions"`
+	Favorited        flexInt64 `json:"favorited"`
+	Views            flexInt64 `json:"views"`
+	FileSize         flexInt64 `json:"file_size"`
+	PreviewURL       string    `json:"preview_url"`
+	Creator          string    `json:"creator"`
+	Visibility       flexInt64 `json:"visibility"`
+	Banned           bool      `json:"banned"`
 	Tags             []struct {
 		DisplayName string `json:"display_name"`
 	} `json:"tags"`
+}
+
+// flexInt64 accepts either a JSON number or a string that holds digits. Steam
+// sends some of these fields differently across item shapes.
+type flexInt64 int64
+
+func (f *flexInt64) UnmarshalJSON(data []byte) error {
+	text := strings.TrimSpace(strings.Trim(string(data), `"`))
+	if text == "" || text == "null" {
+		*f = 0
+		return nil
+	}
+	value := 0
+	for i := 0; i < len(text); i++ {
+		if text[i] < '0' || text[i] > '9' {
+			*f = 0
+			return nil
+		}
+		value = value*10 + int(text[i]-'0')
+	}
+	*f = flexInt64(value)
+	return nil
 }
 
 func parseDetailsBody(data []byte) (map[string]catalogItem, error) {
@@ -461,15 +483,15 @@ func parseDetailsBody(data []byte) (map[string]catalogItem, error) {
 			ID:            row.PublishedFileID,
 			Title:         row.Title,
 			Description:   row.ShortDescription,
-			TimeCreated:   row.TimeCreated,
-			TimeUpdated:   row.TimeUpdated,
-			Subscriptions: row.Subscriptions,
-			Favorited:     row.Favorited,
-			Views:         row.Views,
-			FileSize:      row.FileSize,
+			TimeCreated:   int64(row.TimeCreated),
+			TimeUpdated:   int64(row.TimeUpdated),
+			Subscriptions: int(row.Subscriptions),
+			Favorited:     int(row.Favorited),
+			Views:         int(row.Views),
+			FileSize:      int64(row.FileSize),
 			PreviewURL:    row.PreviewURL,
 			Creator:       row.Creator,
-			Visibility:    row.Visibility,
+			Visibility:    int(row.Visibility),
 			Banned:        row.Banned,
 		}
 		for _, tag := range row.Tags {
