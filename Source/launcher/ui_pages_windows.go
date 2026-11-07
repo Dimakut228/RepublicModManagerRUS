@@ -324,8 +324,22 @@ func drawSidebar(c *canvas, w, h int) {
 
 }
 
-func drawStatusBar(c *canvas, x, y, w, h int) {
-	c.fillRect(x, y, w, h, palette.Sidebar)
+var statusFailureKeywords = []string{
+	"fail", "cannot", "error", "abort", "invalid",
+	"ошибк", "не удал", "невозможн", "прерва", "сбой", "провал",
+}
+
+func statusIndicatesFailure(status string) bool {
+	lower := strings.ToLower(status)
+	for _, keyword := range statusFailureKeywords {
+		if strings.Contains(lower, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+func drawStatusBar(c *canvas, x, y, w, h int) {	c.fillRect(x, y, w, h, palette.Sidebar)
 	c.line(x, y, x+w, y, c.s(1), palette.Border)
 	tx := x + c.s(24)
 	if c.app.busy {
@@ -333,7 +347,7 @@ func drawStatusBar(c *canvas, x, y, w, h int) {
 		tx += c.s(62)
 	} else {
 		color := palette.Good
-		if strings.Contains(strings.ToLower(c.app.status), "fail") || strings.Contains(strings.ToLower(c.app.status), "cannot") || strings.Contains(strings.ToLower(c.app.status), "error") {
+		if statusIndicatesFailure(c.app.status) {
 			color = palette.Bad
 		}
 		c.circle(tx, y+c.s(16), c.s(9), color, color)

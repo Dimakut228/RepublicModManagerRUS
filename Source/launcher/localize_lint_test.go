@@ -108,8 +108,20 @@ func literalContainsText(lit string) bool {
 	return letters >= 2
 }
 
-func TestWindowTitleLocalized(t *testing.T) {
-	data, err := os.ReadFile("main_windows.go")
+func TestStatusIndicatesFailure(t *testing.T) {
+	for _, text := range []string{"Cannot launch: x", "Detailed diagnostic bootstrap failed — x", "Ошибка запуска", "не удалось скопировать SHA"} {
+		if !statusIndicatesFailure(text) {
+			t.Errorf("statusIndicatesFailure(%q) = false, want true", text)
+		}
+	}
+	for _, text := range []string{"Ready", "WRSR + RML launched successfully", "Готов", "Проверка выполнена"} {
+		if statusIndicatesFailure(text) {
+			t.Errorf("statusIndicatesFailure(%q) = true, want false", text)
+		}
+	}
+}
+
+func TestWindowTitleLocalized(t *testing.T) {	data, err := os.ReadFile("main_windows.go")
 	if err != nil {
 		t.Fatalf("read main_windows.go: %v", err)
 	}
