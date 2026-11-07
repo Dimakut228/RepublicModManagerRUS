@@ -182,7 +182,7 @@ type cachedPage struct {
 }
 
 func pageCachePath(client *catalogClient, q catalogQuery) string {
-	seed := fmt.Sprintf("p%q_s%q_t%q_p%d_tags%v_inc%v", q.Page, q.Search, q.Sort, q.Period, q.Tags, q.ShowIncompatible)
+	seed := fmt.Sprintf("p%q_s%q_t%q_p%q_tags%v_inc%v", q.Page, q.Search, q.Sort, q.Period, q.Tags, q.ShowIncompatible)
 	sum := sha256.Sum256([]byte(seed))
 	return filepath.Join(catalogCachePath(client.KnowledgeRoot), "page-"+hex.EncodeToString(sum[:])[:20]+".json")
 }
