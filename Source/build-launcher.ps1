@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Build = Join-Path $Root 'build'
-$Out = Join-Path $Build 'RepublicModLoader.exe'
+$Out = Join-Path $Build 'RepublicModManagerRUS.exe'
 $Version = (Get-Content (Join-Path $Root 'VERSION') -TotalCount 1).Trim()
 New-Item -ItemType Directory -Force $Build | Out-Null
 
@@ -17,9 +17,9 @@ try {
 }
 
 python (Join-Path $Root 'tools\pe_resources.py') $Out `
-    --icon (Join-Path $Root 'assets\RepublicModLoader.ico') `
+    --icon (Join-Path $Root 'assets\RepublicModManagerRUS.ico') `
     --version $Version `
-    --file-description 'Republic Mod Loader' `
-    --original-filename 'RepublicModLoader.exe'
+    --file-description 'Republic Mod manager V 1.0 RUS' `
+    --original-filename 'RepublicModManagerRUS.exe'
 python (Join-Path $Root 'tools\pe_finalize.py') $Out
-Write-Host "Built Republic Mod Loader v$Version at $Out"
+Write-Host "Built Republic Mod manager V 1.0 RUS v$Version at $Out"

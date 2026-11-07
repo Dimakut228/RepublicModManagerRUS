@@ -1,103 +1,88 @@
-# Republic Mod Loader
+# Republic Mod manager V 1.0 RUS — Неофициальный (Unofficial)
 
-**Version 1.0.1 — RML API 1**
+Лаунчер и менеджер DLL-плагинов для **Workers & Resources: Soviet Republic** (fork
+Republic Mod Loader, GPL-3.0).
 
-Republic Mod Loader (RML) is a standalone Windows x64 mod loader and mod manager for **Workers & Resources: Soviet Republic**. It launches WRSR with selected DLL plugins and Workshop content, provides a native **RML API 1**, and includes compatibility support for Tesmio API 3/4 plugins.
+- Каталог Steam Workshop внутри программы: поиск, категории-фильтры, период, сортировки,
+  пагинация, карточки модов.
+- Подписка/отписка без захода на страницу Steam (Steam сам скачивает и обновляет файлы).
+- Машинный перевод описаний модов на русский (включается/выключается в настройках; только
+  текст описания отправляется на перевод, есть локальный кэш).
+- Русский и английский интерфейс; язык меняется в настройках без перезапуска.
+- Плейлисты, диагностика, поддержка Tesmio-плагинов — как в upstream Republic Mod Loader.
 
-RML v1.0.1 has been tested against WRSR **1.1.1.9**.
+Скачивание файлов модов остаётся за Steam: лаунчер подписывается на элементы, Steam
+качать контент. Никакого обхода Steam.
 
-- Steam Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=3787969749
-- Source repository: https://github.com/Ultimate-Universe/WRSR-RepublicModLoader
-- WRSR Workshop collection: https://steamcommunity.com/workshop/filedetails/?id=3778286965
+## Установка (portable ZIP)
 
-## Requirements
+1. Распаковать архив в любую папку.
+2. Запустить `RepublicModManagerRUS.exe`.
+3. Если игра не найдена — указать путь к `SOVIET64.exe`.
+4. Включать плагины и моды, собирать плейлисты, запускать игру кнопкой.
 
-- 64-bit Windows.
-- Workers & Resources: Soviet Republic installed through Steam.
-- Steam running when using subscribed Workshop content or Steam Workshop operations.
+Для(machine-перевода описаний) нужен интернет. Кэш хранится в `%LOCALAPPDATA%`.
 
-## Installation and launching
+## Сборка из исходников
 
-The normal installation is the Steam Workshop item. After subscribing, run:
+Требуется: Go 1.23+, CMake 3.24+, Visual Studio 2022 C++ (x64), Python 3.
 
-```text
-<Steam library>\steamapps\workshop\content\784150\3787969749\RepublicModLoader.exe
+```powershell
+cd Source
+.\build-all.ps1
 ```
 
-RML can also be launched in the following ways:
+Результат: `Source\build\RepublicModManagerRUS.exe` и `Source\build\rml_runtime.dll`.
 
-- **Copied EXE:** `RepublicModLoader.exe` may be copied to the Desktop, another folder, or another drive without copying `rml_runtime.dll`. If the runtime is not beside the EXE, RML searches the Steam libraries configured in `libraryfolders.vdf` for Workshop item `3787969749` and uses the runtime/configuration files there.
-- **Steam non-Steam game:** the EXE can be added to the Steam library as a non-Steam game and launched from Steam.
-- **Windows shortcut or taskbar pin:** create a shortcut to the EXE or pin it normally.
+## Лицензия и атрибуция
 
-If you copy the EXE by itself, keep the RML Workshop item subscribed and installed because that Workshop installation remains the runtime home.
+- Исходный проект: Republic Mod Loader 1.0.1 (по коммиту `57e567e`) — GPL-3.0.
+- Этот форк распространяется под GPL-3.0; исходники поставляются с каждым релизом.
+- «Republic Mod manager V 1.0 RUS — Unofficial» — неаффелированный сторонний проект;
+  не связан с 3DIVISION, Hooded Horse, Valve или автором Republic Mod Loader.
+- Подробности: `NOTICE.md`.
 
-## Using RML
+---
 
-1. Run `RepublicModLoader.exe`.
-2. Confirm the detected WRSR installation if prompted.
-3. Choose the active playlist.
-4. Enable the DLL plugins, Workshop items and Development DLL payloads you want to use.
-5. Launch WRSR through RML.
+# Republic Mod manager V 1.0 RUS — Unofficial (English)
 
-The Mod Manager has three content views:
+Launcher and DLL plugin manager for **Workers & Resources: Soviet Republic** (a GPL-3.0
+fork of Republic Mod Loader).
 
-- **Plugins** — standalone DLLs and DLLs embedded in Workshop or Development projects.
-- **Workshop** — subscribed WRSR Workshop items.
-- **Development** — local projects under `media_soviet/workshop_wip`.
+- In-app Steam Workshop catalog: search, category filters, period, sorting, pagination,
+  mod cards.
+- Subscribe/unsubscribe in one click; Steam itself downloads and updates files.
+- Machine translation of mod descriptions into Russian (toggle in settings; only
+  description text is sent, cached locally).
+- Russian and English UI; switchable without restarting.
+- Playlists, diagnostics, Tesmio compatibility — same as upstream.
 
-Development checkboxes control whether RML loads a project's DLL payload. Disabling a Development DLL does not hide that project from WRSR's in-game Workshop/Development authoring menu.
+Downloads stay in Steam: the launcher subscribes to items, Steam provides files.
 
-## Playlists
+## Install (portable ZIP)
 
-`Default` is the live default configuration. User-created playlists can be saved, renamed, deleted, exported and imported.
+1. Unpack anywhere.
+2. Run `RepublicModManagerRUS.exe`.
+3. Point it to `SOVIET64.exe` when prompted.
+4. Enable plugins/mods, build playlists, launch.
 
-- `Default` cannot be renamed, deleted or exported.
-- Exports are JSON files and default to the `Exports` folder in the RML runtime home.
-- Import accepts a selected or drag-and-dropped playlist JSON and requests Steam subscriptions for Workshop items listed in the playlist.
-- A launch configuration can contain up to **40,000 enabled Workshop items**.
+Description translation needs internet access. Cache lives under `%LOCALAPPDATA%`.
 
-## Plugin compatibility
+## Build from source
 
-RML supports:
+Requirements: Go 1.23+, CMake 3.24+, Visual Studio 2022 C++ (x64), Python 3.
 
-- native RML API 1 plugins;
-- Tesmio API 3/4 plugins through the built-in compatibility host;
-- structurally valid native DLLs that do not expose either supported lifecycle.
-
-RML validates DLL structure before launch, maintains an exact-build Symbol Cache for known WRSR targets, and tracks supported shared-hook chains. Detailed Diagnostic Logging adds lifecycle, hook-chain and executable-change evidence for troubleshooting.
-
-## Troubleshooting
-
-If RML aborts a launch, use **Detailed Diagnostic Logging** and reproduce the problem. RML records launcher/runtime logs and can create a support archive containing the relevant reports and configuration.
-
-If a copied EXE reports that the runtime cannot be found, verify that Workshop item `3787969749` is subscribed and fully downloaded in one of Steam's configured libraries. Running the EXE directly from the Workshop folder is the simplest baseline test.
-
-For plugin-development requirements and the native API, see `Source/docs/PLUGIN_SDK.md`.
-
-## Building
-
-The complete source required to rebuild the release is in `Source/`.
-
-- `Source/docs/BUILD.md` — toolchain and build instructions.
-- `Source/docs/ARCHITECTURE.md` — launcher/runtime architecture and important constraints.
-- `Source/docs/PLUGIN_SDK.md` — DLL discovery, admission and RML API 1.
-- `Source/docs/TESMIO_COMPATIBILITY.md` — Tesmio API 3/4 compatibility behavior.
-
-The public native interface is `Source/include/rml_api.h`.
-
-## Repository layout
-
-```text
-README.md
-CHANGELOG.md
-LICENSE
-ModFiles/   # files distributed through Steam Workshop
-Source/     # buildable source and developer documentation
+```powershell
+cd Source
+.\build-all.ps1
 ```
 
-## Licence
+Outputs: `Source\build\RepublicModManagerRUS.exe` and `Source\build\rml_runtime.dll`.
 
-Republic Mod Loader is distributed under the **GNU General Public License version 3**. See `LICENSE`.
+## Licence and attribution
 
-Workers & Resources: Soviet Republic, Steam, TesmioLoader and their respective names/assets belong to their respective owners. This project is not affiliated with or endorsed by 3DIVISION, Hooded Horse, Valve, or the TesmioLoader author.
+- Base project: Republic Mod Loader 1.0.1 (commit `57e567e`) — GPL-3.0.
+- This fork is distributed under GPL-3.0; the source ships with every release.
+- “Republic Mod manager V 1.0 RUS — Unofficial” is an unaffiliated third-party build,
+  not endorsed by 3DIVISION, Hooded Horse, Valve, or the Republic Mod Loader author.
+- Details: `NOTICE.md`.
