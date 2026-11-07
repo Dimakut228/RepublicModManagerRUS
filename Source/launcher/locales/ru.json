@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "code": "ru",
+    "name": "Русский",
+    "version": 1
+  },
+  "strings": {
+    "test.verb.count": "%d штук",
+    "test.verb.name": "имя: %s"
+  }
+}
