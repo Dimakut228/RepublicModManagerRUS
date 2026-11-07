@@ -5,6 +5,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -74,7 +76,7 @@ func (a *application) startCatalogFetch() {
 		ShowIncompatible: a.cfg.CatalogShowIncompatible,
 	}
 	go func() {
-		ids, total, err := client.fetchPageCached(query)
+		ids, total, stale, err := client.fetchPageCached(query)
 		a.workshopMu.Lock()
 		if gen != a.catalogFetchGen {
 			a.workshopMu.Unlock()
@@ -82,11 +84,13 @@ func (a *application) startCatalogFetch() {
 		}
 		a.catalogIDs = ids
 		a.catalogTotal = total
+		a.catalogOffline = stale
 		a.workshopMu.Unlock()
 		if err != nil {
 			a.status = tr("catalog.load_failed") + err.Error()
 			a.workshopMu.Lock()
 			a.catalogBusy = false
+			a.catalogOffline = false
 			a.workshopMu.Unlock()
 			invalidateWindow(a.hwnd)
 			postAppMessage(a.hwnd, wmRMLCatalogDone, 1, 0)
@@ -102,10 +106,14 @@ func (a *application) startCatalogFetch() {
 		}
 		a.catalogItems = details
 		a.catalogBusy = false
+		a.catalogOffline = stale || detailsErr != nil && len(details) == 0
 		a.workshopMu.Unlock()
-		if detailsErr != nil {
+		switch {
+		case detailsErr != nil:
 			a.status = tr("catalog.details_failed") + detailsErr.Error()
-		} else {
+		case stale:
+			a.status = tr("catalog.state.offline")
+		default:
 			a.status = fmt.Sprintf(tr("catalog.rows.count"), len(details), total)
 		}
 		invalidateWindow(a.hwnd)
@@ -207,6 +215,18 @@ func catalogTagsLabel(tags []string) string {
 	return strings.Join(tags, ", ")
 }
 
+func (a *application) catalogItemInstalled(itemID string) bool {
+	if a.game == nil || a.game.Path == "" {
+		return false
+	}
+	root := workshopRootFromGamePath(a.game.Path)
+	if root == "" {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(root, itemID))
+	return err == nil && info.IsDir()
+}
+
 func catalogCatalogTitle(item catalogItem) string {
 	title := item.Title
 	if title == "" {
@@ -228,6 +248,8 @@ func (a *application) ensureTranslated(desc string) (string, string, bool) {
 	}
 	a.translateMu.Lock()
 	defer a.translateMu.Unlock()
+	a.translateGen++
+	gen := a.translateGen
 	if a.translateSource == desc && (a.translateState == "done" || a.translateState == "busy" || a.translateState == "error") {
 		return a.translateResult, a.translateState, true
 	}
@@ -245,7 +267,12 @@ func (a *application) ensureTranslated(desc string) (string, string, bool) {
 	go func() {
 		text, err := translator.translate(desc)
 		a.translateMu.Lock()
-		a.translateSource = desc
+		defer a.translateMu.Unlock()
+		if gen != a.translateGen || a.translateSource != desc {
+			// Another card is current now; the finished translation belongs to
+			// the requested source and stays only in the file cache.
+			return
+		}
 		a.translateResult = text
 		if err != nil {
 			a.translateState = "error"
@@ -254,7 +281,6 @@ func (a *application) ensureTranslated(desc string) (string, string, bool) {
 			a.translateState = "done"
 			a.translateError = ""
 		}
-		a.translateMu.Unlock()
 		invalidateWindow(a.hwnd)
 		postAppMessage(a.hwnd, wmRMLTranslateDone, 0, 0)
 	}()
@@ -267,10 +293,13 @@ func (a *application) restartTranslate(desc string) {
 	}
 	translator := defaultTranslator(a.knowledgeRoot)
 	translationDrop(translator.knowledgeRoot, desc)
+	a.translateMu.Lock()
+	a.translateGen++
 	a.translateSource = ""
 	a.translateState = ""
 	a.translateResult = ""
 	a.translateError = ""
+	a.translateMu.Unlock()
 	a.ensureTranslated(desc)
 }
 
@@ -377,8 +406,14 @@ func drawCatalogPage(c *canvas, x, y, w, h int) {
 	c.compactButton("catalog-sort", fmt.Sprintf("%s: %s", tr("catalog.filters.sort"), catalogSortLabelFor(app.cfg.CatalogSort)), sortX, filtersTop, sortW, c.s(38))
 	c.addHit("catalog-sort", sortX, filtersTop, sortW, c.s(38))
 	periodX := sortX + sortW + gap
-	c.compactButton("catalog-period", fmt.Sprintf("%s: %s", tr("catalog.filters.period"), catalogPeriodLabel(app.cfg.CatalogPeriod)), periodX, filtersTop, c.s(190), c.s(38))
-	c.addHit("catalog-period", periodX, filtersTop, c.s(190), c.s(38))
+	if app.cfg.CatalogSort == "" || sortParameter(app.cfg.CatalogSort) == catalogSortTrend {
+		c.compactButton("catalog-period", fmt.Sprintf("%s: %s", tr("catalog.filters.period"), catalogPeriodLabel(app.cfg.CatalogPeriod)), periodX, filtersTop, c.s(190), c.s(38))
+		c.addHit("catalog-period", periodX, filtersTop, c.s(190), c.s(38))
+	} else {
+		// The period parameter only affects "trend" on Steam's side; hide it
+		// for the other real sorts rather than pretending it is in effect.
+		c.text(tr("catalog.filters.period_hidden"), periodX, filtersTop, c.s(190), c.s(38), fonts.Tiny, palette.TextFaint, dtLeft|dtVCenter|dtSingleLine)
+	}
 
 	cursor = filtersTop + c.s(52)
 	// Tag chips wrap into up to 3 rows.
@@ -421,6 +456,8 @@ func drawCatalogPage(c *canvas, x, y, w, h int) {
 	cursor = chipY + c.s(44)
 	if app.catalogBusy {
 		c.text(tr("catalog.state.loading"), x, cursor, w, c.s(26), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
+	} else if app.catalogOffline {
+		c.text(tr("catalog.state.offline"), x, cursor, w, c.s(26), fonts.Tiny, palette.Warn, dtLeft|dtVCenter|dtSingleLine)
 	} else if len(app.catalogIDs) == 0 {
 		c.text(tr("catalog.state.empty"), x, cursor, w, c.s(26), fonts.Small, palette.TextMuted, dtLeft|dtVCenter|dtSingleLine)
 	}
@@ -513,10 +550,16 @@ func drawCatalogDetailPane(c *canvas, x, y, w, h int) {
 
 	// Buttons
 	bottomY := y + h - c.s(46)
-	c.button("catalog-subscribe", tr("catalog.subscribe.btn"), x+c.s(20), bottomY, c.s(180), c.s(38), true)
-	c.addHit("catalog-subscribe", x+c.s(20), bottomY, c.s(180), c.s(38))
-	c.compactButton("catalog-unsubscribe", tr("catalog.unsubscribe.btn"), x+c.s(212), bottomY, c.s(160), c.s(38))
-	c.addHit("catalog-unsubscribe", x+c.s(212), bottomY, c.s(160), c.s(38))
+	installed := c.app.catalogItemInstalled(item.ID)
+	if installed {
+		c.pill(tr("catalog.state.installed"), 0, x+c.s(20), bottomY, c.s(180), c.s(38))
+		c.addHit("catalog-subscribe-disabled", x+c.s(20), bottomY, c.s(180), c.s(38))
+		c.compactButton("catalog-unsubscribe", tr("catalog.unsubscribe.btn"), x+c.s(212), bottomY, c.s(160), c.s(38))
+		c.addHit("catalog-unsubscribe", x+c.s(212), bottomY, c.s(160), c.s(38))
+	} else {
+		c.button("catalog-subscribe", tr("catalog.subscribe.btn"), x+c.s(20), bottomY, c.s(180), c.s(38), true)
+		c.addHit("catalog-subscribe", x+c.s(20), bottomY, c.s(180), c.s(38))
+	}
 	c.compactButton("catalog-open-page", tr("t.open_workshop"), x+c.s(384), bottomY, c.s(180), c.s(38))
 	c.addHit("catalog-open-page", x+c.s(384), bottomY, c.s(180), c.s(38))
 

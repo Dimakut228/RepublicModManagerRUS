@@ -245,25 +245,37 @@ func saveDetailsCache(path string, item catalogItem) {
 	_ = os.WriteFile(path, append(data, '\n'), 0o644)
 }
 
-func (c *catalogClient) cachePageQuery(q catalogQuery, fetch func() ([]string, int, error)) ([]string, int, error) {
+func (c *catalogClient) fetchPageCached(q catalogQuery) (ids []string, total int, stale bool, err error) {
+	if c.KnowledgeRoot == "" {
+		ids, total, err = c.fetchPage(q)
+		return ids, total, false, err
+	}
 	path := pageCachePath(c, q)
 	if page, ok := loadPageCache(path, catalogListTTL); ok {
-		return page.IDs, page.Total, nil
+		return page.IDs, page.Total, false, nil
 	}
-	ids, total, err := fetch()
+	ids, total, err = c.fetchPage(q)
 	if err == nil {
 		savePageCache(path, cachedPage{Total: total, IDs: ids})
+		return ids, total, false, nil
 	}
-	return ids, total, err
+	// Offline fallback: serve the previous cache even when it is stale.
+	if stalePage, ok := loadPageCacheStale(path); ok {
+		return stalePage.IDs, stalePage.Total, true, nil
+	}
+	return ids, total, false, err
 }
 
-func (c *catalogClient) fetchPageCached(q catalogQuery) ([]string, int, error) {
-	if c.KnowledgeRoot == "" {
-		return c.fetchPage(q)
+func loadPageCacheStale(path string) (cachedPage, bool) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return cachedPage{}, false
 	}
-	return c.cachePageQuery(q, func() ([]string, int, error) {
-		return c.fetchPage(q)
-	})
+	var cached cachedPage
+	if json.Unmarshal(data, &cached) != nil || len(cached.IDs) == 0 {
+		return cachedPage{}, false
+	}
+	return cached, true
 }
 
 func (c *catalogClient) cachePageDetails(ids []string, fetch func([]string) (map[string]catalogItem, error)) (map[string]catalogItem, error) {
@@ -336,13 +348,15 @@ func (c *catalogClient) fetchPage(q catalogQuery) ([]string, int, error) {
 		values.Add("requiredtags[]", tag)
 	}
 	if q.ShowIncompatible {
-		values.Set("browsefilter", "")
+		// Steam's browse page exposes "Show incompatible items" through the
+		// showincompatible query flag.
+		values.Set("showincompatible", "1")
 	}
 	req, err := http.NewRequest(http.MethodGet, browse+"?"+values.Encode(), nil)
 	if err != nil {
 		return nil, 0, err
 	}
-	req.Header.Set("User-Agent", "RepublicModManagerRUS/1.0.0")
+	req.Header.Set("User-Agent", fmt.Sprintf("RepublicModManagerRUS/%s", launcherVersion))
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	resp, err := c.doRequestWithRetries(req)
 	if err != nil {

@@ -3,7 +3,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -205,6 +204,14 @@ func (t *translator) translate(raw string) (string, error) {
 	return translated, nil
 }
 
+// Translate provider hardening: one retry on transient failures and 300 ms
+// spacing between chunk requests (spec §10).
+
+const (
+	translateRetryLimit  = 2
+	translateGapDuration = 300 * time.Millisecond
+)
+
 func (t *translator) translateChunk(chunk string) (string, error) {
 	endpoint := t.endpoint
 	if endpoint == "" {
@@ -215,33 +222,67 @@ func (t *translator) translateChunk(chunk string) (string, error) {
 		sep = "&"
 	}
 	reqURL := endpoint + sep + "q=" + url.QueryEscape(chunk)
-	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
-	if err != nil {
-		return "", err
+	var lastErr error
+	for attempt := 0; attempt < translateRetryLimit; attempt++ {
+		if attempt > 0 {
+			time.Sleep(translateGapDuration)
+		}
+		req, err := http.NewRequest(http.MethodGet, reqURL, nil)
+		if err != nil {
+			return "", err
+		}
+		req.Header.Set("User-Agent", fmt.Sprintf("RepublicModManagerRUS/%s", launcherVersion))
+		resp, err := t.client.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("translation network error: %w", err)
+			continue
+		}
+		value, ok, serviceError := readTranslateResponse(t, resp)
+		resp.Body.Close()
+		if serviceError == nil {
+			if ok {
+				return value, nil
+			}
+			lastErr = fmt.Errorf("translation service returned an empty body")
+			continue
+		}
+		if serviceError.retry {
+			lastErr = serviceError
+			continue
+		}
+		return "", serviceError
 	}
-	req.Header.Set("User-Agent", "RepublicModManagerRUS/1.0.0")
-	resp, err := t.client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("translation network error: %w", err)
-	}
-	defer resp.Body.Close()
+	return "", lastErr
+}
+
+type translateError struct {
+	retry bool
+	msg   string
+}
+
+func (err *translateError) Error() string {
+	return err.msg
+}
+
+func readTranslateResponse(t *translator, resp *http.Response) (string, bool, *translateError) {
 	switch {
 	case resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusForbidden:
 		t.pausedUntil = time.Now().Add(translatePauseTTL)
-		return "", fmt.Errorf("translation service refused the request (status %d); paused for 10 minutes", resp.StatusCode)
-	case resp.StatusCode == http.StatusOK:
-	default:
-		return "", fmt.Errorf("translation service returned status %d", resp.StatusCode)
+		return "", false, &translateError{retry: false, msg: fmt.Sprintf("translation service refused the request (status %d); paused for 10 minutes", resp.StatusCode)}
+	case resp.StatusCode >= 500:
+		return "", false, &translateError{retry: true, msg: fmt.Sprintf("translation service returned status %d", resp.StatusCode)}
+	case resp.StatusCode != http.StatusOK:
+		return "", false, &translateError{retry: false, msg: fmt.Sprintf("translation service returned status %d", resp.StatusCode)}
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return "", err
+		return "", false, &translateError{retry: true, msg: fmt.Sprintf("translation body read failed: %v", err)}
 	}
 	value, err := parseGoogleTranslateBody(body)
 	if err != nil {
-		return "", err
+		return "", false, &translateError{retry: false, msg: err.Error()}
 	}
-	return value, nil
+	return value, true, nil
 }
 
 func parseGoogleTranslateBody(body []byte) (string, error) {
@@ -249,12 +290,15 @@ func parseGoogleTranslateBody(body []byte) (string, error) {
 	if err := json.Unmarshal(body, &decoded); err != nil {
 		return "", fmt.Errorf("translation response parse failed: %w", err)
 	}
-	var out strings.Builder
 	segments, _ := decoded.([]any)
-	if segments == nil {
+	if len(segments) == 0 {
 		return "", fmt.Errorf("translation response shape unexpected")
 	}
 	first, _ := segments[0].([]any)
+	if len(first) == 0 {
+		return "", fmt.Errorf("translation response shape unexpected")
+	}
+	var out strings.Builder
 	for _, seg := range first {
 		row, _ := seg.([]any)
 		if len(row) == 0 {
@@ -309,5 +353,3 @@ func translationPut(t *translator, source, translated string) {
 	}
 	_ = os.WriteFile(path, append(data, '\n'), 0o644)
 }
-
-var _ = bytes.TrimSpace // keep imports honest if refactors touch helpers

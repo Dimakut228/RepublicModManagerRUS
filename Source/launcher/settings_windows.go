@@ -19,7 +19,9 @@ func catalogCacheRoot(knowledgeRoot string) string {
 }
 
 func translationCachePath(knowledgeRoot string) string {
-	return filepath.Join(translationCacheRoot(knowledgeRoot), string(currentLocaleCode()))
+	// Translations are always targeted at Russian (the UI-language gate lives
+	// in ensureTranslated); the cache directory is provider-independent.
+	return filepath.Join(translationCacheRoot(knowledgeRoot), "ru")
 }
 
 func clearTranslationCache(knowledgeRoot string) {

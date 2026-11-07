@@ -164,9 +164,11 @@ type application struct {
 	catalogListH         int
 	catalogOriginalText  string
 	catalogSelectedID    string
+	catalogOffline       bool
 	translateMu          sync.Mutex
 	translateSource      string // normalised source currently handled
 	translateState       string // "", busy, done, error
+	translateGen         uint32 // increments on every ensureTranslated call
 	translateResult      string
 	translateError       string
 	catalogShowOriginal  bool
